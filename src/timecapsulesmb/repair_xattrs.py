@@ -191,7 +191,7 @@ def default_share_path_from_config(
     if len(target_matches) > 1:
         raise RuntimeError(f"Found multiple mounted SMB shares from {target_host}; pass --path explicitly.")
     if len(candidates) == 1:
-        return candidates[0].mountpoint
+        raise RuntimeError(f"No mounted SMB share matches {target_host}; pass --path explicitly.")
     if len(candidates) > 1:
         raise RuntimeError(f"Found multiple mounted SMB shares; pass --path explicitly.")
     return None

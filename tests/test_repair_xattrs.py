@@ -1112,17 +1112,15 @@ class RepairXattrsTests(unittest.TestCase):
             Path("/Volumes/Data"),
         )
 
-    def test_default_share_path_uses_unique_matching_smb_share_when_host_label_differs(self) -> None:
+    def test_default_share_path_requires_explicit_path_when_host_label_differs(self) -> None:
         env = {"TC_HOST": "root@192.168.1.217"}
         shares = [repair_xattrs_domain.MountedSmbShare("timecapsulesamba4.local", "Data", Path("/Volumes/Data-1"))]
-        self.assertEqual(
+        with self.assertRaisesRegex(RuntimeError, "pass --path explicitly"):
             repair_xattrs_domain.default_share_path_from_config(
                 self.app_config(env),
                 shares=shares,
                 path_exists_func=lambda _path: True,
-            ),
-            Path("/Volumes/Data-1"),
-        )
+            )
 
     def test_default_share_path_ignores_afp_mount_with_matching_volume_name(self) -> None:
         env = {"TC_HOST": "root@192.168.1.217"}
