@@ -532,7 +532,7 @@ if [ ! -f "$TC_PASSWORD_FILE" ] && [ -n "$TC_PASSWORD" ]; then
 fi
 
 tc_ssh() {
-    base_ssh_opts="-o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts -o GlobalKnownHostsFile=/dev/null -o KnownHostsCommand=none -o VerifyHostKeyDNS=no -o UpdateHostKeys=no -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 -o NumberOfPasswordPrompts=1"
+    base_ssh_opts="-o StrictHostKeyChecking=yes -o ControlMaster=no -o ControlPath=none -o UserKnownHostsFile=~/.ssh/known_hosts -o GlobalKnownHostsFile=/dev/null -o KnownHostsCommand=none -o VerifyHostKeyDNS=no -o UpdateHostKeys=no -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 -o NumberOfPasswordPrompts=1"
     if [ -n "${TC_PASSWORD_FILE:-}" ] && [ -f "$TC_PASSWORD_FILE" ]; then
         SSHPASS=$(cat "$TC_PASSWORD_FILE")
         export SSHPASS
@@ -551,7 +551,7 @@ tc_ssh() {
 }
 
 tc_scp() {
-    base_ssh_opts="-o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts -o GlobalKnownHostsFile=/dev/null -o KnownHostsCommand=none -o VerifyHostKeyDNS=no -o UpdateHostKeys=no"
+    base_ssh_opts="-o StrictHostKeyChecking=yes -o ControlMaster=no -o ControlPath=none -o UserKnownHostsFile=~/.ssh/known_hosts -o GlobalKnownHostsFile=/dev/null -o KnownHostsCommand=none -o VerifyHostKeyDNS=no -o UpdateHostKeys=no"
     if [ -n "${TC_PASSWORD_FILE:-}" ] && [ -f "$TC_PASSWORD_FILE" ]; then
         SSHPASS=$(cat "$TC_PASSWORD_FILE")
         export SSHPASS

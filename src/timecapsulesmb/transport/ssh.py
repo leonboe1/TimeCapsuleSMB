@@ -374,6 +374,8 @@ def known_hosts_path() -> Path:
 def host_verification_args() -> list[str]:
     return [
         "-o", "StrictHostKeyChecking=yes",
+        "-o", "ControlMaster=no",
+        "-o", "ControlPath=none",
         "-o", f"UserKnownHostsFile={shlex.quote(str(known_hosts_path()))}",
         "-o", "GlobalKnownHostsFile=/dev/null",
         "-o", "KnownHostsCommand=none",
