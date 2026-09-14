@@ -110,6 +110,7 @@ class SSHTransportTests(unittest.TestCase):
                 "ssh",
                 "-F",
                 "/dev/null",
+                *ssh_transport.host_verification_args(),
                 "-o",
                 "PubkeyAuthentication=no",
                 "-o",
@@ -187,26 +188,15 @@ class SSHTransportTests(unittest.TestCase):
         self.assertEqual(output, "TimeCapsule�\n")
         self.assertEqual(spawn_mock.call_args.kwargs["codec_errors"], "replace")
 
-    def test_spawn_with_password_accepts_first_connection_authenticity_prompt(self) -> None:
-        try:
-            import pexpect  # noqa: F401
-        except Exception:
-            self.skipTest("pexpect not available")
+    def test_spawn_with_password_rejects_untrusted_key_before_sending_password(self) -> None:
         fake_child = mock.Mock()
         fake_child.expect.side_effect = [0, 1, 2]
-        fake_child.before = "NetBSD\n"
-        fake_child.exitstatus = 0
-        fake_child.signalstatus = None
+        fake_child.before = "RSA key fingerprint is SHA256:untrusted.\n"
         with mock.patch("pexpect.spawn", return_value=fake_child):
-            rc, output = ssh_transport._spawn_with_password(
-                ["ssh", "host", "cmd"],
-                "pw",
-                timeout=10,
-                timeout_message="timeout",
-            )
-        self.assertEqual(rc, 0)
-        self.assertEqual(output, "NetBSD\n")
-        self.assertEqual(fake_child.sendline.call_args_list, [mock.call("yes"), mock.call("pw")])
+            with self.assertRaisesRegex(ssh_transport.SshClientConfigError, "not trusted"):
+                ssh_transport._spawn_with_password(["ssh", "host", "cmd"], "pw", timeout=10, timeout_message="timeout")
+        fake_child.sendline.assert_not_called()
+        fake_child.close.assert_called_once()
 
     def test_spawn_with_password_timeout_raises_timeout_subtype(self) -> None:
         try:
@@ -520,6 +510,7 @@ class SSHTransportTests(unittest.TestCase):
                 "ssh",
                 "-F",
                 "/dev/null",
+                *ssh_transport.host_verification_args(),
                 "-o",
                 "PubkeyAuthentication=no",
                 "-J",
@@ -681,7 +672,7 @@ class SSHTransportTests(unittest.TestCase):
         except Exception:
             self.skipTest("pexpect not available")
         fake_child = mock.Mock()
-        fake_child.expect.side_effect = [0, 1, 3]
+        fake_child.expect.side_effect = [1, 3]
         fake_child.before = ""
         fake_child.isalive.return_value = True
         with mock.patch("pexpect.spawn", return_value=fake_child) as spawn_mock:
@@ -701,7 +692,7 @@ class SSHTransportTests(unittest.TestCase):
         self.assertIn("/dev/null", cmd[1])
         self.assertIn("-J", cmd[1])
         self.assertIn("jump.example", cmd[1])
-        self.assertEqual(fake_child.sendline.call_args_list, [mock.call("yes"), mock.call("pw")])
+        self.assertEqual(fake_child.sendline.call_args_list, [mock.call("pw")])
         tcp_open_mock.assert_called_once_with("127.0.0.1", 10445, timeout=0.2)
         fake_child.close.assert_called_once_with(force=True)
 

@@ -37,6 +37,21 @@ For the python setup, you need:
 - `smbclient` installed locally for `doctor`
 - Homebrew installed for macOS users
 
+SSH connections require a pinned device key in `~/.ssh/known_hosts`. Unknown and
+changed keys are rejected before credentials are sent, including with old insecure
+`TC_SSH_OPTS` settings. For a new device, verify its SHA256 host-key fingerprint
+through an independently trusted channel (for example, an existing trusted SSH
+session), then enroll it:
+
+```sh
+tcapsule trust-host root@192.168.1.2 --fingerprint SHA256:YOUR_VERIFIED_FINGERPRINT
+```
+
+A fingerprint from `ssh-keyscan` alone does not authenticate the device. The app
+uses the same trust store. Changed keys are never replaced automatically; after
+verifying a legitimate reset or rotation, remove the old entry with `ssh-keygen -R`
+and enroll the verified replacement.
+
 During first-time setup, if necessary `configure` can enable SSH on the Time Capsule.
 
 Also, if you are an expert and want to DIY the install, you can copy the binary at [/bin/samba4/smbd](/bin/samba4/smbd) for NetBSD 6 devices, [/bin/samba4-netbsd4le/smbd](/bin/samba4-netbsd4le/smbd) for NetBSD 4 little-endian devices, or [/bin/samba4-netbsd4be/smbd](/bin/samba4-netbsd4be/smbd) for NetBSD 4 big-endian devices onto the Time Capsule and set it up yourself. The binaries are statically compiled, so you don't need anything else. The working binaries are saved in this repository under [bin/](bin), and the normal user workflow uses those checked-in files directly. You do not need to build Samba yourself, but if you want to rebuild `smbd` by yourself, run the scripts in `build/` on a NetBSD machine. 

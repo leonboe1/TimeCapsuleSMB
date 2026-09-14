@@ -139,6 +139,12 @@ def _classify_ssh_client_error_line(line: str) -> SshError | None:
         return algorithm_error
 
     lowered = line.lower()
+    if any(value in lowered for value in ("host key verification failed", "remote host identification has changed", "you have requested strict checking")):
+        return SshClientConfigError(
+            "SSH host identity verification failed. Verify the device fingerprint "
+            "and use tcapsule trust-host for first-time enrollment. "
+            "A changed key requires an explicit key rotation.\n" + line
+        )
     if "bad configuration option" in lowered:
         return SshClientConfigError(f"Connecting to the device failed, SSH error: {line}")
     if any(pattern in lowered for pattern in SSH_TRANSPORT_ERROR_PATTERNS):
@@ -191,7 +197,10 @@ def _spawn_with_password(cmd: list[str], password: str, *, timeout: int, timeout
         while True:
             idx = child.expect([SSH_AUTHENTICITY_PROMPT, "[Pp]assword:", pexpect.EOF, pexpect.TIMEOUT], timeout=timeout)
             if idx == 0:
-                child.sendline("yes")
+                raise SshClientConfigError(
+                    "SSH host identity is not trusted. Verify the device fingerprint "
+                    "and run tcapsule trust-host before retrying.\n" + (child.before or "")
+                )
             elif idx == 1:
                 child.sendline(password)
             elif idx == 2:
@@ -358,6 +367,21 @@ def _tokens_request_public_key_auth(tokens: list[str]) -> bool:
     )
 
 
+def known_hosts_path() -> Path:
+    return Path.home() / ".ssh" / "known_hosts"
+
+
+def host_verification_args() -> list[str]:
+    return [
+        "-o", "StrictHostKeyChecking=yes",
+        "-o", f"UserKnownHostsFile={known_hosts_path()}",
+        "-o", "GlobalKnownHostsFile=/dev/null",
+        "-o", "KnownHostsCommand=none",
+        "-o", "VerifyHostKeyDNS=no",
+        "-o", "UpdateHostKeys=no",
+    ]
+
+
 def _connection_ssh_args(connection: SshConnection) -> list[str]:
     """Return config-isolated SSH args with authentication derived per connection."""
     tokens = _normalize_ssh_tokens(connection.ssh_opts)
@@ -371,7 +395,9 @@ def _connection_ssh_args(connection: SshConnection) -> list[str]:
         # explicit key configuration and keyboard-interactive password servers.
         auth_args = ["-o", "PubkeyAuthentication=no"]
 
-    return ["-F", "/dev/null", *auth_args, *tokens]
+    # OpenSSH uses the first value for these options. Prepend the policy so
+    # insecure options saved by earlier releases cannot bypass host verification.
+    return ["-F", "/dev/null", *host_verification_args(), *auth_args, *tokens]
 
 
 def run_ssh(connection: SshConnection, remote_cmd: str, *, check: bool = True, timeout: int = 120) -> subprocess.CompletedProcess[str]:
@@ -517,7 +543,10 @@ def ssh_local_forward(
         while True:
             idx = child.expect([SSH_AUTHENTICITY_PROMPT, "[Pp]assword:", pexpect.EOF, pexpect.TIMEOUT], timeout=1)
             if idx == 0:
-                child.sendline("yes")
+                raise SshClientConfigError(
+                    "SSH host identity is not trusted. Verify the device fingerprint "
+                    "and run tcapsule trust-host before retrying.\n" + (child.before or "")
+                )
             elif idx == 1:
                 child.sendline(connection.password)
                 password_sent = True

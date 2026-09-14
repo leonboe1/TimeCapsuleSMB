@@ -182,7 +182,7 @@ TC_NETBSD7_CIFS_SYSDNSNAME="${TC_NETBSD7_CIFS_SYSDNSNAME:-James AirPort Time Cap
 TC_NETBSD7_CIFS_VOLUME_NAME="${TC_NETBSD7_CIFS_VOLUME_NAME:-AirPort Disk}"
 
 TC_NETBSD4LE_HOST="${TC_NETBSD4LE_HOST:-root@timecapsule.local}"
-TC_NETBSD4LE_SSH_OPTS="${TC_NETBSD4LE_SSH_OPTS:--o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa -o KexAlgorithms=+diffie-hellman-group14-sha1 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null}"
+TC_NETBSD4LE_SSH_OPTS="${TC_NETBSD4LE_SSH_OPTS:--o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa -o KexAlgorithms=+diffie-hellman-group14-sha1 -o StrictHostKeyChecking=yes}"
 TC_NETBSD4LE_SSH_PROXYCOMMAND="${TC_NETBSD4LE_SSH_PROXYCOMMAND:-}"
 TC_NETBSD4LE_PASSWORD_FILE="${TC_NETBSD4LE_PASSWORD_FILE:-}"
 TC_NETBSD4LE_PASSWORD="${TC_NETBSD4LE_PASSWORD:-}"
@@ -195,7 +195,7 @@ TC_NETBSD4LE_CIFS_SYSDNSNAME="${TC_NETBSD4LE_CIFS_SYSDNSNAME:-James AirPort Time
 TC_NETBSD4LE_CIFS_VOLUME_NAME="${TC_NETBSD4LE_CIFS_VOLUME_NAME:-AirPort Disk}"
 
 TC_NETBSD4BE_HOST="${TC_NETBSD4BE_HOST:-root@timecapsule.local}"
-TC_NETBSD4BE_SSH_OPTS="${TC_NETBSD4BE_SSH_OPTS:--o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa -o KexAlgorithms=+diffie-hellman-group14-sha1 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null}"
+TC_NETBSD4BE_SSH_OPTS="${TC_NETBSD4BE_SSH_OPTS:--o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa -o KexAlgorithms=+diffie-hellman-group14-sha1 -o StrictHostKeyChecking=yes}"
 TC_NETBSD4BE_SSH_PROXYCOMMAND="${TC_NETBSD4BE_SSH_PROXYCOMMAND:-}"
 TC_NETBSD4BE_PASSWORD_FILE="${TC_NETBSD4BE_PASSWORD_FILE:-}"
 TC_NETBSD4BE_PASSWORD="${TC_NETBSD4BE_PASSWORD:-}"
