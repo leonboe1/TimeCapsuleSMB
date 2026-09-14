@@ -37,6 +37,10 @@ For the python setup, you need:
 - `smbclient` installed locally for `doctor`
 - Homebrew installed for macOS users
 
+New CLI configurations and app profiles bind SMB to LAN interfaces by default.
+Existing explicit choices are preserved. Keep `TC_SMB_BIND_LAN_ONLY=true` unless
+you have deliberately configured a separate trusted network and its firewall.
+
 SSH connections require a pinned device key in `~/.ssh/known_hosts`. Unknown and
 changed keys are rejected before credentials are sent, including with old insecure
 `TC_SSH_OPTS` settings. For a new device, verify its SHA256 host-key fingerprint

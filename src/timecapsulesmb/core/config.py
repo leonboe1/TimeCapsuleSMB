@@ -62,7 +62,7 @@ DEFAULTS = {
     "TC_HOST": DEFAULT_SSH_TARGET_PLACEHOLDER,
     "TC_SSH_OPTS": "-o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa -o KexAlgorithms=+diffie-hellman-group14-sha1 -o StrictHostKeyChecking=yes",
     "TC_INTERNAL_SHARE_USE_DISK_ROOT": "false",
-    "TC_SMB_BIND_LAN_ONLY": "false",
+    "TC_SMB_BIND_LAN_ONLY": "true",
     "TC_SMB_BROWSE_COMPATIBILITY": "false",
     "TC_MDNS_ADVERTISE_AFP": "false",
     "TC_ANY_PROTOCOL": "false",
