@@ -2,7 +2,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class AddDeviceViewSmokeTests: XCTestCase {
+final class AddDeviceViewSmokeTests: LocalizedTestCase {
     func testRendersIdleManualAndLocalValidationStates() async throws {
         let fixture = try await makeFixture()
 

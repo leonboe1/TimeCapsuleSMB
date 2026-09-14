@@ -4,7 +4,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class RevealablePasswordFieldTests: XCTestCase {
+final class RevealablePasswordFieldTests: LocalizedTestCase {
     func testToggleRevealsAndConcealsPasswordWithoutChangingValue() throws {
         let model = RevealablePasswordFieldTestModel()
         let host = NSHostingView(rootView: RevealablePasswordFieldTestHarness(model: model))

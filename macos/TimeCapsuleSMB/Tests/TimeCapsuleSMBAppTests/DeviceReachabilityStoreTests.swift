@@ -2,7 +2,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class DeviceReachabilityStoreTests: XCTestCase {
+final class DeviceReachabilityStoreTests: LocalizedTestCase {
     func testRefreshRunsReachabilityOnWorkflowLaneAndStoresSnapshot() async throws {
         let runner = StoreTestRunner(responses: [
             .init(events: [

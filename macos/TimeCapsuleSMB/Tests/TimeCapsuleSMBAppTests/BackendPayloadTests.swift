@@ -1,7 +1,7 @@
 import XCTest
 @testable import TimeCapsuleSMBApp
 
-final class BackendPayloadTests: XCTestCase {
+final class BackendPayloadTests: LocalizedTestCase {
     func testDecodesReadinessPayloads() throws {
         let capabilities = try jsonValue("""
         {

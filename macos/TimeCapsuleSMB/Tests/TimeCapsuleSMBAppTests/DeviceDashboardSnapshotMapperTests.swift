@@ -1,7 +1,7 @@
 import XCTest
 @testable import TimeCapsuleSMBApp
 
-final class DeviceDashboardSnapshotMapperTests: XCTestCase {
+final class DeviceDashboardSnapshotMapperTests: LocalizedTestCase {
     func testPassedCheckupMapsRuntimeToInstalledVerified() throws {
         let profile = try makeProfile(payloadFamily: "netbsd6_samba4")
         let summary = try makeDoctorSummary(checks: [

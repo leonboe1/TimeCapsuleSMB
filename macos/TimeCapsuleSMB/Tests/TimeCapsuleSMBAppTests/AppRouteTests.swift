@@ -3,7 +3,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class AppRouteTests: XCTestCase {
+final class AppRouteTests: LocalizedTestCase {
     func testNavigationHelpersSetSingleRoute() async throws {
         let fixture = try await makeFixture()
         let profile = try await fixture.registry.saveConfiguredDevice(

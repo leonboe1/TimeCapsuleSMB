@@ -1,7 +1,7 @@
 import XCTest
 @testable import TimeCapsuleSMBApp
 
-final class AddDevicePresentationTests: XCTestCase {
+final class AddDevicePresentationTests: LocalizedTestCase {
     func testProgressPresentationAppearsOnlyForBlockingStates() {
         let discoveryStage = OperationStageState(event: BackendEvent(
             type: "stage",

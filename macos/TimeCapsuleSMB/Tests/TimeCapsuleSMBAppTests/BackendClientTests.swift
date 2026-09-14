@@ -2,7 +2,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class BackendClientTests: XCTestCase {
+final class BackendClientTests: LocalizedTestCase {
     func testRunPublishesEventsAndResetsState() async throws {
         let runner = RecordingHelperRunner(
             events: [

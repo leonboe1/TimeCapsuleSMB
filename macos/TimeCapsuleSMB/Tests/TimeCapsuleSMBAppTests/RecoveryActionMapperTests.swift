@@ -1,7 +1,7 @@
 import XCTest
 @testable import TimeCapsuleSMBApp
 
-final class RecoveryActionMapperTests: XCTestCase {
+final class RecoveryActionMapperTests: LocalizedTestCase {
     override func tearDown() {
         L10n.apply(language: .system)
         super.tearDown()

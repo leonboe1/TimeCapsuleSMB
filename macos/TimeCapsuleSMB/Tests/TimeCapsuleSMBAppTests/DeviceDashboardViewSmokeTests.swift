@@ -3,7 +3,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class DeviceDashboardViewSmokeTests: XCTestCase {
+final class DeviceDashboardViewSmokeTests: LocalizedTestCase {
     func testRendersEveryDashboardTabInIdleState() async throws {
         let fixture = try await AppViewFixture()
         let profile = try await fixture.saveProfile(id: "device-one")

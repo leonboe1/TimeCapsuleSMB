@@ -2,7 +2,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class OperationCoordinatorLaneTests: XCTestCase {
+final class OperationCoordinatorLaneTests: LocalizedTestCase {
     func testAppAndDeviceOperationsRunInParallel() async throws {
         let runner = OperationKeyedStoreTestRunner(responses: [
             .init("discover"): [

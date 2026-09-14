@@ -2,7 +2,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class DashboardStoreTests: XCTestCase {
+final class DashboardStoreTests: LocalizedTestCase {
     func testNoDeviceRegistryLeavesNoSelectedProfile() async throws {
         let fixture = try await makeFixture(responses: [])
 
@@ -407,7 +407,7 @@ final class DashboardStoreTests: XCTestCase {
         let session = dashboard.session(for: profile)
 
         XCTAssertEqual(session.deployStore.nbnsEnabled, false)
-        XCTAssertEqual(session.deployStore.rsyncEnabled, true)
+        XCTAssertEqual(session.deployStore.rsyncEnabled, false)
         XCTAssertEqual(session.deployStore.internalShareUseDiskRoot, true)
         XCTAssertEqual(session.deployStore.smbBindLanOnly, true)
         XCTAssertEqual(session.deployStore.smbBrowseCompatibility, true)
@@ -464,7 +464,7 @@ final class DashboardStoreTests: XCTestCase {
 
         XCTAssertEqual(session.profileEditorStore.state, .saved)
         XCTAssertEqual(session.deployStore.nbnsEnabled, false)
-        XCTAssertEqual(session.deployStore.rsyncEnabled, true)
+        XCTAssertEqual(session.deployStore.rsyncEnabled, false)
         XCTAssertEqual(session.deployStore.internalShareUseDiskRoot, true)
         XCTAssertEqual(session.deployStore.smbBindLanOnly, true)
         XCTAssertEqual(session.deployStore.smbBrowseCompatibility, true)

@@ -2,7 +2,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class DeviceRegistryStoreTests: XCTestCase {
+final class DeviceRegistryStoreTests: LocalizedTestCase {
     func testStateInventoryIsExplicit() {
         XCTAssertEqual(DeviceRegistryState.allCases, [.idle, .loading, .empty, .loaded, .saving, .failed])
     }

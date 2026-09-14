@@ -2,7 +2,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class DeviceProfilePersistenceServiceTests: XCTestCase {
+final class DeviceProfilePersistenceServiceTests: LocalizedTestCase {
     func testKeychainFailureDoesNotPersistProfile() async throws {
         let temp = try TemporaryDirectory()
         let registry = DeviceRegistryStore(applicationSupportURL: temp.url)

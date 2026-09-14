@@ -2,7 +2,7 @@ import Security
 import XCTest
 @testable import TimeCapsuleSMBApp
 
-final class PasswordStoreTests: XCTestCase {
+final class PasswordStoreTests: LocalizedTestCase {
     func testSaveReadUpdateAndDeletePassword() throws {
         let store = InMemoryPasswordStore()
 

@@ -1,7 +1,7 @@
 import XCTest
 @testable import TimeCapsuleSMBApp
 
-final class PendingConfirmationTests: XCTestCase {
+final class PendingConfirmationTests: LocalizedTestCase {
     func testLocalizedStringsLoadFromResourceBundle() {
         XCTAssertEqual(L10n.string("screen.readiness"), "Readiness")
         XCTAssertEqual(L10n.string("toolbar.cancel"), "Cancel")

@@ -2,7 +2,7 @@ import Foundation
 import XCTest
 @testable import TimeCapsuleSMBApp
 
-final class HelperPipeReaderTests: XCTestCase {
+final class HelperPipeReaderTests: LocalizedTestCase {
     func testReadabilityPipeReaderStreamsChunksUntilWriterCloses() async throws {
         let pipe = Pipe()
         let reader = ReadabilityPipeReader()

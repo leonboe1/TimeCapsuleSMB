@@ -4,7 +4,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class FlashWorkflowStoreTests: XCTestCase {
+final class FlashWorkflowStoreTests: LocalizedTestCase {
     func testStateInventoryIsExplicit() {
         XCTAssertEqual(FlashWorkflowState.allCases, [
             .unavailable,

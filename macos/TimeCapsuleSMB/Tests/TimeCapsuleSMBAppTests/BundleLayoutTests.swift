@@ -1,7 +1,7 @@
 import XCTest
 @testable import TimeCapsuleSMBApp
 
-final class BundleLayoutTests: XCTestCase {
+final class BundleLayoutTests: LocalizedTestCase {
     func testResourceBundleLocatorPrefersPackagedResourceDirectory() throws {
         let temp = try TemporaryDirectory()
         let app = temp.url.appendingPathComponent("TimeCapsuleSMB.app", isDirectory: true)

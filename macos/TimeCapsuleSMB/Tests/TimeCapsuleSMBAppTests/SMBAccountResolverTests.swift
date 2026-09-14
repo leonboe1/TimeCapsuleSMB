@@ -2,7 +2,7 @@ import Security
 import XCTest
 @testable import TimeCapsuleSMBApp
 
-final class SMBAccountResolverTests: XCTestCase {
+final class SMBAccountResolverTests: LocalizedTestCase {
     func testFindsSMBAccountForResolvedHostnameWithoutReadingPasswordData() {
         let keychain = AccountLookupKeychainClient(accountsByServer: [
             "AirPort-Time-Capsule.local": "jameschang"

@@ -2,7 +2,7 @@ import Foundation
 import XCTest
 @testable import TimeCapsuleSMBApp
 
-final class HelperLocatorTests: XCTestCase {
+final class HelperLocatorTests: LocalizedTestCase {
     func testLocatorUsesExplicitHelperAndSetsAppEnvironment() throws {
         let temp = try TemporaryDirectory()
         let helper = temp.url.appendingPathComponent("tcapsule")

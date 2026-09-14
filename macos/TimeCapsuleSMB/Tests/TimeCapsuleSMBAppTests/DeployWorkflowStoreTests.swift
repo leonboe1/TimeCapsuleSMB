@@ -3,7 +3,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class DeployWorkflowStoreTests: XCTestCase {
+final class DeployWorkflowStoreTests: LocalizedTestCase {
     func testStateInventoryIsExplicit() {
         XCTAssertEqual(DeployWorkflowState.allCases, [
             .idle,
@@ -251,12 +251,12 @@ final class DeployWorkflowStoreTests: XCTestCase {
         XCTAssertEqual(store.state, .planReady)
         XCTAssertTrue(store.canDeploy)
 
-        store.smbBindLanOnly = true
+        store.smbBindLanOnly = false
 
         XCTAssertEqual(store.state, .planStale)
         XCTAssertTrue(store.canDeploy)
 
-        store.smbBindLanOnly = false
+        store.smbBindLanOnly = true
 
         XCTAssertEqual(store.state, .planReady)
         XCTAssertTrue(store.canDeploy)
@@ -359,7 +359,7 @@ final class DeployWorkflowStoreTests: XCTestCase {
         try await waitUntilStoreState { store.state == .planReady }
 
         XCTAssertEqual(runner.calls[0].params["internal_share_use_disk_root"], .bool(false))
-        XCTAssertEqual(runner.calls[0].params["smb_bind_lan_only"], .bool(false))
+        XCTAssertEqual(runner.calls[0].params["smb_bind_lan_only"], .bool(true))
         XCTAssertEqual(runner.calls[0].params["smb_browse_compatibility"], .bool(false))
         XCTAssertEqual(runner.calls[0].params["any_protocol"], .bool(false))
     }

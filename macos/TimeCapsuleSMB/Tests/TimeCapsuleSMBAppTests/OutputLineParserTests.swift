@@ -2,7 +2,7 @@ import Foundation
 import XCTest
 @testable import TimeCapsuleSMBApp
 
-final class OutputLineParserTests: XCTestCase {
+final class OutputLineParserTests: LocalizedTestCase {
     func testParserHandlesSplitMultipleAndUnterminatedLines() {
         var parser = OutputLineParser()
 

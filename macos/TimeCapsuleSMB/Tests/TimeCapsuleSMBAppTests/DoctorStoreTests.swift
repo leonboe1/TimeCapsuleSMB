@@ -3,7 +3,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class DoctorStoreTests: XCTestCase {
+final class DoctorStoreTests: LocalizedTestCase {
     func testStateInventoryIsExplicit() {
         XCTAssertEqual(DoctorWorkflowState.allCases, [
             .idle,

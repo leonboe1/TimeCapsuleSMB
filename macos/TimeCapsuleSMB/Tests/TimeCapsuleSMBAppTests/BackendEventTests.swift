@@ -2,7 +2,7 @@ import Foundation
 import XCTest
 @testable import TimeCapsuleSMBApp
 
-final class BackendEventTests: XCTestCase {
+final class BackendEventTests: LocalizedTestCase {
     func testBackendEventDecodesContractFields() throws {
         let data = """
         {"schema_version":1,"request_id":"req-1","type":"error","operation":"deploy","code":"remote_error","message":"failed","debug":{"stderr":"detail"},"recovery":{"title":"No HFS volumes found","retryable":true,"actions":["retry"]}}

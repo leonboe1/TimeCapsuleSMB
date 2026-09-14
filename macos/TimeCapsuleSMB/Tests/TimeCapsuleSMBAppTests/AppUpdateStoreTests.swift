@@ -3,7 +3,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class AppUpdateStoreTests: XCTestCase {
+final class AppUpdateStoreTests: LocalizedTestCase {
     func testCheckNowMarksCurrentVersion() async throws {
         let runner = StoreTestRunner(responses: [
             .init(events: [

@@ -3,7 +3,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class AppCloseGuardTests: XCTestCase {
+final class AppCloseGuardTests: LocalizedTestCase {
     func testCloseGuardAllowsWindowCloseWithoutPromptWhenNoOperationIsActive() {
         let guardController = AppCloseGuard()
         let presenter = RecordingCloseGuardPresenter()

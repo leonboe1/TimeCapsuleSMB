@@ -3,7 +3,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class AddDeviceFlowStoreTests: XCTestCase {
+final class AddDeviceFlowStoreTests: LocalizedTestCase {
     func testStateInventoryIsExplicit() {
         XCTAssertEqual(AddDeviceFlowState.allCases, [
             .idle,
@@ -593,7 +593,7 @@ final class AddDeviceFlowStoreTests: XCTestCase {
         XCTAssertEqual(fixture.store.savedProfile?.settings, defaultSettings)
         XCTAssertEqual(fixture.runner.calls[0].params["debug_logging"], .bool(true))
         XCTAssertEqual(fixture.runner.calls[0].params["internal_share_use_disk_root"], .bool(true))
-        XCTAssertEqual(fixture.runner.calls[0].params["smb_bind_lan_only"], .bool(false))
+        XCTAssertEqual(fixture.runner.calls[0].params["smb_bind_lan_only"], .bool(true))
         XCTAssertEqual(fixture.runner.calls[0].params["smb_browse_compatibility"], .bool(true))
         XCTAssertEqual(fixture.runner.calls[0].params["mdns_advertise_afp"], .bool(true))
         XCTAssertEqual(fixture.runner.calls[0].params["any_protocol"], .bool(true))
@@ -655,7 +655,7 @@ final class AddDeviceFlowStoreTests: XCTestCase {
         XCTAssertEqual(fixture.store.savedProfile?.settings, editedExisting.settings)
         XCTAssertEqual(fixture.runner.calls[0].params["debug_logging"], .bool(false))
         XCTAssertEqual(fixture.runner.calls[0].params["internal_share_use_disk_root"], .bool(false))
-        XCTAssertEqual(fixture.runner.calls[0].params["smb_bind_lan_only"], .bool(false))
+        XCTAssertEqual(fixture.runner.calls[0].params["smb_bind_lan_only"], .bool(true))
         XCTAssertEqual(fixture.runner.calls[0].params["smb_browse_compatibility"], .bool(false))
         XCTAssertEqual(fixture.runner.calls[0].params["mdns_advertise_afp"], .bool(false))
         XCTAssertEqual(fixture.runner.calls[0].params["any_protocol"], .bool(false))

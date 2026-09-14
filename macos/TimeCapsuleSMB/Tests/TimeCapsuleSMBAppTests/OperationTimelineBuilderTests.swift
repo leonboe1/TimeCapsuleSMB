@@ -1,7 +1,7 @@
 import XCTest
 @testable import TimeCapsuleSMBApp
 
-final class OperationTimelineBuilderTests: XCTestCase {
+final class OperationTimelineBuilderTests: LocalizedTestCase {
     func testBuildsUserFacingTimelineFromStagesResultsAndErrors() {
         let events = [
             BackendEvent(

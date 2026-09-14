@@ -2,7 +2,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class DashboardPresentationTests: XCTestCase {
+final class DashboardPresentationTests: LocalizedTestCase {
     func testCheckupPresentationHeadlineFollowsState() throws {
         let payload = try testDoctorPayload(checks: [
             testDoctorCheck(status: "PASS", message: "ssh ok", domain: "Device"),

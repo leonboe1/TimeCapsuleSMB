@@ -3,7 +3,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class AppSettingsStoreTests: XCTestCase {
+final class AppSettingsStoreTests: LocalizedTestCase {
     func testLoadMissingSettingsUsesDefaults() async throws {
         let temp = try TemporaryDirectory()
         let store = AppSettingsStore(settingsURL: temp.url.appendingPathComponent("settings.json"))
@@ -65,19 +65,33 @@ final class AppSettingsStoreTests: XCTestCase {
         XCTAssertEqual(store.state, .loaded)
         XCTAssertEqual(store.settings.language, .system)
         XCTAssertEqual(store.settings.appearance, .system)
-        XCTAssertFalse(store.settings.defaultDeviceSettings.smbBindLanOnly)
+        XCTAssertTrue(store.settings.defaultDeviceSettings.smbBindLanOnly)
         XCTAssertFalse(store.settings.defaultDeviceSettings.mdnsAdvertiseAFP)
         XCTAssertFalse(store.settings.telemetryEnabled)
     }
 
-    func testLegacyDeviceSettingsWithoutSMBBindLANOnlyUseDefaultOff() throws {
+    func testLegacyDeviceSettingsWithoutSMBBindLANOnlyUseDefaultOn() throws {
         let data = #"{"nbnsEnabled":true,"debugLogging":false,"mountWaitSeconds":30}"#.data(using: .utf8)!
 
         let settings = try JSONDecoder().decode(DeviceProfileSettings.self, from: data)
 
-        XCTAssertFalse(settings.smbBindLanOnly)
+        XCTAssertTrue(settings.smbBindLanOnly)
         XCTAssertFalse(settings.mdnsAdvertiseAFP)
         XCTAssertFalse(settings.rsyncEnabled)
+    }
+
+    func testLegacyTelemetryAndRsyncOptInsAreDisabledOnLoad() throws {
+        let data = Data(#"{"telemetryEnabled":true,"defaultDeviceSettings":{"rsyncEnabled":true}}"#.utf8)
+        let settings = try JSONDecoder().decode(AppSettings.self, from: data)
+        XCTAssertFalse(settings.telemetryEnabled)
+        XCTAssertFalse(settings.defaultDeviceSettings.rsyncEnabled)
+        XCTAssertTrue(settings.defaultDeviceSettings.smbBindLanOnly)
+    }
+
+    func testExplicitSMBInterfaceChoiceIsPreservedOnLoad() throws {
+        let data = Data(#"{"smbBindLanOnly":false}"#.utf8)
+        let settings = try JSONDecoder().decode(DeviceProfileSettings.self, from: data)
+        XCTAssertFalse(settings.smbBindLanOnly)
     }
 
     func testCorruptSettingsFailsWithoutReplacingDefaults() async throws {
@@ -292,7 +306,7 @@ final class AppSettingsStoreTests: XCTestCase {
         }
     }
 
-    func testSavingSettingsAppliesHelperPathAndRunsTelemetrySyncOnlyWhenNeeded() async throws {
+    func testSavingSettingsAppliesHelperPathWithoutEnablingTelemetry() async throws {
         let originalLanguage = L10n.currentLanguage
         defer { L10n.apply(language: originalLanguage) }
         let temp = try TemporaryDirectory()
@@ -317,8 +331,8 @@ final class AppSettingsStoreTests: XCTestCase {
         settings.telemetryEnabled = false
         try await appStore.saveAppSettings(settings)
 
-        try await waitUntilStoreState { runner.calls.map(\.operation).contains("set-telemetry") }
-        XCTAssertEqual(runner.calls.first?.params["enabled"], .bool(false))
+        XCTAssertFalse(settingsStore.settings.telemetryEnabled)
+        XCTAssertFalse(runner.calls.map(\.operation).contains("set-telemetry"))
         XCTAssertEqual(L10n.currentLanguage, .simplifiedChinese)
 
         var helperSettings = settings

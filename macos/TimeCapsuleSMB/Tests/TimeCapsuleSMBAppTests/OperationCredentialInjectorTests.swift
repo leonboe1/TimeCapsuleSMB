@@ -1,7 +1,7 @@
 import XCTest
 @testable import TimeCapsuleSMBApp
 
-final class OperationCredentialInjectorTests: XCTestCase {
+final class OperationCredentialInjectorTests: LocalizedTestCase {
     func testNilPasswordLeavesParamsUnchanged() {
         let params: [String: JSONValue] = ["dry_run": .bool(true)]
 

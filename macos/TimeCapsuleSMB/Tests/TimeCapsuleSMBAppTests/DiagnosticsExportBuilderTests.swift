@@ -1,7 +1,7 @@
 import XCTest
 @testable import TimeCapsuleSMBApp
 
-final class DiagnosticsExportBuilderTests: XCTestCase {
+final class DiagnosticsExportBuilderTests: LocalizedTestCase {
     func testExportIncludesReleaseReadinessAndDeviceContext() {
         let text = DiagnosticsExportBuilder().build(context: makeContext())
 

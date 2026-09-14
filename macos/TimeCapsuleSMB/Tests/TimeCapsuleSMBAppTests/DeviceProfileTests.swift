@@ -2,7 +2,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class DeviceProfileTests: XCTestCase {
+final class DeviceProfileTests: LocalizedTestCase {
     func testStableConfigPathFromProfileID() {
         let appSupport = URL(fileURLWithPath: "/tmp/TimeCapsuleSMBTests", isDirectory: true)
 

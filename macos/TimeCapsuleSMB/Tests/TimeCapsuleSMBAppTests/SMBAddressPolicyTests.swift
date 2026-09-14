@@ -1,7 +1,7 @@
 import XCTest
 @testable import TimeCapsuleSMBApp
 
-final class SMBAddressPolicyTests: XCTestCase {
+final class SMBAddressPolicyTests: LocalizedTestCase {
     func testPrefersBonjourSMBServiceOverResolvedHostname() {
         let profile = makeProfile(
             host: "root@10.0.0.2",

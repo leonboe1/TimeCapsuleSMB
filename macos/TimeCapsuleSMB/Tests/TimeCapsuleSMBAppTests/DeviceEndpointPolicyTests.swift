@@ -1,7 +1,7 @@
 import XCTest
 @testable import TimeCapsuleSMBApp
 
-final class DeviceEndpointPolicyTests: XCTestCase {
+final class DeviceEndpointPolicyTests: LocalizedTestCase {
     func testAddressFamilyParsesIPLiteralForms() {
         XCTAssertEqual(DeviceEndpointPolicy.addressFamily(for: "10.0.0.2"), .ipv4)
         XCTAssertEqual(DeviceEndpointPolicy.addressFamily(for: "fd00::2"), .ipv6)

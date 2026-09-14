@@ -2,7 +2,7 @@ import Foundation
 import XCTest
 @testable import TimeCapsuleSMBApp
 
-final class HelperRunnerTests: XCTestCase {
+final class HelperRunnerTests: LocalizedTestCase {
     func testRunnerStreamsEventsFromHelper() async throws {
         let temp = try TemporaryDirectory()
         let helper = try makeHelper(

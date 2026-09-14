@@ -2,7 +2,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class DeviceSSHAccessStoreTests: XCTestCase {
+final class DeviceSSHAccessStoreTests: LocalizedTestCase {
     func testRefreshRunsSSHAccessStatusAndStoresSnapshot() async throws {
         let runner = StoreTestRunner(responses: [
             .init(events: [

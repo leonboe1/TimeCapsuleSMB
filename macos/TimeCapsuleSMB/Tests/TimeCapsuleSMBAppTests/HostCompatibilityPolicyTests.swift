@@ -1,7 +1,7 @@
 import XCTest
 @testable import TimeCapsuleSMBApp
 
-final class HostCompatibilityPolicyTests: XCTestCase {
+final class HostCompatibilityPolicyTests: LocalizedTestCase {
     func testWarnsForKnownProblemVersions() {
         XCTAssertNotNil(HostCompatibilityPolicy.warning(for: OperatingSystemVersion(majorVersion: 15, minorVersion: 7, patchVersion: 5)))
         XCTAssertNotNil(HostCompatibilityPolicy.warning(for: OperatingSystemVersion(majorVersion: 15, minorVersion: 7, patchVersion: 6)))

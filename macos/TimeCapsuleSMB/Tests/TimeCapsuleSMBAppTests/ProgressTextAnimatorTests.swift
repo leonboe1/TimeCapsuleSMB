@@ -1,7 +1,7 @@
 import XCTest
 @testable import TimeCapsuleSMBApp
 
-final class ProgressTextAnimatorTests: XCTestCase {
+final class ProgressTextAnimatorTests: LocalizedTestCase {
     func testRunningMessageCyclesOneTwoAndThreeDots() {
         let message = "Run local and remote diagnostic checks."
 

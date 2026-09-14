@@ -2,7 +2,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class BackendOperationObserverTests: XCTestCase {
+final class BackendOperationObserverTests: LocalizedTestCase {
     func testObserverOnlyDeliversEventsForActiveRequestID() {
         let observer = BackendOperationObserver()
         let operation = ActiveOperation(

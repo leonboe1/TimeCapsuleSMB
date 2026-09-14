@@ -1,7 +1,7 @@
 import XCTest
 @testable import TimeCapsuleSMBApp
 
-final class DeviceStatusPolicyTests: XCTestCase {
+final class DeviceStatusPolicyTests: LocalizedTestCase {
     func testStateInventoryIsExplicit() {
         XCTAssertEqual(DeviceDisplayStatus.allCases, [
             .unchecked,

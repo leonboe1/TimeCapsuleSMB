@@ -2,7 +2,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class ActivityStoreTests: XCTestCase {
+final class ActivityStoreTests: LocalizedTestCase {
     func testActivitySnapshotTracksActiveOperationTimelineAndDevice() async throws {
         let runner = PausingStoreTestRunner(responses: [
             .init(events: [

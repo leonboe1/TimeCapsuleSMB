@@ -2,7 +2,7 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 @MainActor
-final class ContentViewSmokeTests: XCTestCase {
+final class ContentViewSmokeTests: LocalizedTestCase {
     func testRendersEmptyShellTopLevelRoutes() async throws {
         let fixture = try await AppViewFixture()
         for route in [AppRoute.allDevices, .activity, .appSettings, .addDevice] {
