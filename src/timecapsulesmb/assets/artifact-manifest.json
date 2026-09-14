@@ -10,7 +10,7 @@
     },
     "mdns-netbsd4be": {
       "path": "bin/mdns-netbsd4be/mdns-advertiser",
-      "sha256": "a3a2afbcd999b66e1e36517242d077b4565a911a7599b276530a9bf1fcaa0aa0"
+      "sha256": "bbc09748868838979bb2aaa9965f70c2e1224f90b6a0b792106b1913ea70c26d"
     },
     "nbns": {
       "path": "bin/nbns/nbns-advertiser",
@@ -22,7 +22,7 @@
     },
     "nbns-netbsd4be": {
       "path": "bin/nbns-netbsd4be/nbns-advertiser",
-      "sha256": "f0a05bdf0bc899f9b232d5be1d78241a9ca5baee0196bdcfd1699baebc124a34"
+      "sha256": "c5a5e5d78ccfc668bc2a1abbb5e6c7be6403cab1d1c0adafccdd49c114a6e95a"
     },
     "smbd": {
       "path": "bin/samba4/smbd",
@@ -34,7 +34,7 @@
     },
     "smbd-netbsd4be": {
       "path": "bin/samba4-netbsd4be/smbd",
-      "sha256": "515495c49ac64265e0759483d0a9b68c1f7ef8dae7b350d01a9f85bf37b783ff"
+      "sha256": "f9c5907b33eef7d85cdc4ec787bed8d11039db7b02c5499ade75315d5b0ff448"
     },
     "service": {
       "path": "bin/service/service",
@@ -46,7 +46,7 @@
     },
     "service-netbsd4be": {
       "path": "bin/service-netbsd4be/service",
-      "sha256": "37615f327a49edd78ef4d4210238637b2599f7ecc14464de3d9f79c56acbb2ce"
+      "sha256": "1409a4f3de17a776608e8220c7303bc52256bc7f7d55b86a1963bdfca6d17e7c"
     }
   }
 }
