@@ -1858,7 +1858,7 @@ class CliTests(unittest.TestCase):
         self.assertNotIn("TC_MDNS_DEVICE_MODEL", rendered_env)
         self.assertNotIn("TC_NET_IFACE", fake_values)
         self.assertEqual(fake_values["TC_INTERNAL_SHARE_USE_DISK_ROOT"], "false")
-        self.assertEqual(fake_values["TC_SMB_BIND_LAN_ONLY"], "false")
+        self.assertEqual(fake_values["TC_SMB_BIND_LAN_ONLY"], "true")
         self.assertEqual(fake_values["TC_SMB_BROWSE_COMPATIBILITY"], "false")
         self.assertEqual(fake_values["TC_MDNS_ADVERTISE_AFP"], "false")
         self.assertEqual(fake_values["TC_ANY_PROTOCOL"], "false")
@@ -5247,26 +5247,13 @@ class CliTests(unittest.TestCase):
         finished = self.telemetry_payload("deploy_finished")
         self.assertFalse(finished["nbns_enabled"])
 
-    def test_deploy_enable_rsync_writes_flag_and_always_uploads_daemon_config(self) -> None:
-        captured: dict[str, str] = {}
-
-        def fake_upload(_plan, *, connection, source_resolver, on_uploading=None, on_uploaded=None):
-            captured["flash_config"] = source_resolver[GENERATED_FLASH_CONFIG_SOURCE].read_text()
-            captured["rsync_config"] = source_resolver[GENERATED_RSYNC_CONFIG_SOURCE].read_text()
-
-        result = self.run_deploy_cli(
-            ["--enable-rsync", "--no-reboot"],
-            patch_actions=True,
-            patch_upload=True,
-            upload_side_effect=fake_upload,
-        )
-
-        self.assertEqual(result.rc, 0)
-        self.assertIn("RSYNC_ENABLED=1\n", captured["flash_config"])
-        self.assertIn("port = 873\n", captured["rsync_config"])
-        self.assertIn("path = /Volumes/dk2/ShareRoot\n", captured["rsync_config"])
-        finished = self.telemetry_payload("deploy_finished")
-        self.assertTrue(finished["rsync_enabled"])
+    def test_deploy_enable_rsync_is_rejected_before_device_access(self) -> None:
+        output = io.StringIO()
+        with redirect_stdout(output), mock.patch("timecapsulesmb.cli.deploy.load_env_config") as load:
+            rc = deploy.main(["--enable-rsync", "--no-reboot"])
+        self.assertEqual(rc, 1)
+        self.assertIn("removed from this fork", output.getvalue())
+        load.assert_not_called()
 
     def test_deploy_debug_logging_arg_writes_enabled_flash_config(self) -> None:
         captured: dict[str, str] = {}

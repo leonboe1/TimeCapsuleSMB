@@ -135,7 +135,6 @@ class DeployArtifactPaths:
     smbd: Path
     mdns_advertiser: Path
     nbns_advertiser: Path
-    rsync: Path
     service: Path
 
 
@@ -468,7 +467,6 @@ def resolve_deploy_artifact_paths(
         smbd=resolved_artifacts["smbd"].absolute_path,
         mdns_advertiser=resolved_artifacts["mdns"].absolute_path,
         nbns_advertiser=resolved_artifacts["nbns"].absolute_path,
-        rsync=resolved_artifacts["rsync"].absolute_path,
         service=resolved_artifacts["service"].absolute_path,
     )
 
@@ -509,7 +507,6 @@ def prepare_deploy_preflight(
         artifacts.smbd,
         artifacts.mdns_advertiser,
         artifacts.nbns_advertiser,
-        rsync_path=artifacts.rsync,
         service_path=artifacts.service,
         rsync_enabled=options.rsync_enabled,
         startup_mode=payload_context.startup_mode,
@@ -661,7 +658,6 @@ def prepare_deployment_plan(
         artifacts.smbd,
         artifacts.mdns_advertiser,
         artifacts.nbns_advertiser,
-        rsync_path=artifacts.rsync,
         service_path=artifacts.service,
         rsync_enabled=rsync_enabled,
         startup_mode=payload_context.startup_mode,
@@ -704,7 +700,6 @@ def _deployment_upload_sources(
         BINARY_MDNS_SOURCE: plan.mdns_path,
         BINARY_NBNS_SOURCE: plan.nbns_path,
         BINARY_SERVICE_SOURCE: plan.service_path,
-        BINARY_RSYNC_SOURCE: plan.rsync_path,
         GENERATED_FLASH_CONFIG_SOURCE: generated_flash_config,
         GENERATED_RSYNC_CONFIG_SOURCE: generated_rsync_config,
         PACKAGED_RC_LOCAL_SOURCE: boot_assets.enter_context(boot_asset_path_func("rc.local")),
@@ -1173,6 +1168,8 @@ def render_flash_runtime_config(
     ata_standby: str | int | None = None,
     diskd_use_volume_attempts: int = DEFAULT_DISKD_USE_VOLUME_ATTEMPTS,
 ) -> str:
+    if rsync_enabled:
+        raise ValueError("The unauthenticated rsync daemon has been removed from this fork.")
     internal_root_default = config.get("TC_INTERNAL_SHARE_USE_DISK_ROOT", DEFAULTS["TC_INTERNAL_SHARE_USE_DISK_ROOT"])
     smb_bind_lan_only_default = config.get(
         "TC_SMB_BIND_LAN_ONLY",

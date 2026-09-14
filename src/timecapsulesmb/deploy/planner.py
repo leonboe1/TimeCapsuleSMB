@@ -71,7 +71,6 @@ class DeploymentPlan:
     smbd_path: Path
     mdns_path: Path
     nbns_path: Path
-    rsync_path: Path
     service_path: Path
     rsync_enabled: bool
     flash_targets: dict[str, str]
@@ -214,13 +213,14 @@ def build_deployment_plan(
     mdns_path: Path,
     nbns_path: Path,
     *,
-    rsync_path: Path,
     service_path: Path,
     rsync_enabled: bool = False,
     startup_mode: DeploymentStartupMode = DEPLOY_STARTUP_REBOOT_THEN_VERIFY,
     apple_mount_wait_seconds: int = DEFAULT_APPLE_MOUNT_WAIT_SECONDS,
     wait_after_reboot: bool = True,
 ) -> DeploymentPlan:
+    if rsync_enabled:
+        raise ValueError("The unauthenticated rsync daemon has been removed from this fork.")
     payload_dir = payload_home.payload_dir
     ensure_payload_volume = EnsureVolumeMountedAction(
         payload_home.volume_root,
@@ -241,8 +241,6 @@ def build_deployment_plan(
         "mdns": f"{payload_dir}/mdns-advertiser",
         "nbns": f"{payload_dir}/nbns-advertiser",
         "service": f"{payload_dir}/service",
-        "rsync": f"{payload_dir}/rsync",
-        "rsyncd.conf": f"{payload_dir}/rsyncd.conf",
     }
     private_dir = f"{payload_dir}/private"
     cache_dir = f"{payload_dir}/cache"
@@ -266,8 +264,6 @@ def build_deployment_plan(
         RemotePermission(payload_targets["smbd"], "755"),
         RemotePermission(payload_targets["mdns"], "755"),
         RemotePermission(payload_targets["nbns"], "755"),
-        RemotePermission(payload_targets["rsync"], "755"),
-        RemotePermission(payload_targets["rsyncd.conf"], "600"),
         RemotePermission(flash_targets["rc.local"], "755"),
         RemotePermission(flash_targets["common.sh"], "755"),
         RemotePermission(flash_targets["boot.sh"], "755"),
@@ -288,7 +284,6 @@ def build_deployment_plan(
         smbd_path=smbd_path,
         mdns_path=mdns_path,
         nbns_path=nbns_path,
-        rsync_path=rsync_path,
         service_path=service_path,
         rsync_enabled=rsync_enabled,
         flash_targets=flash_targets,
@@ -302,8 +297,6 @@ def build_deployment_plan(
             FileTransfer(BINARY_MDNS_SOURCE, payload_targets["mdns"], "scp", PAYLOAD_BINARY_UPLOAD_TIMEOUT_SECONDS, "checked-in mdns"),
             FileTransfer(BINARY_MDNS_SOURCE, flash_targets["mdns"], "flash_atomic", PAYLOAD_BINARY_UPLOAD_TIMEOUT_SECONDS, "flash mdns"),
             FileTransfer(BINARY_NBNS_SOURCE, payload_targets["nbns"], "scp", PAYLOAD_BINARY_UPLOAD_TIMEOUT_SECONDS, "checked-in nbns"),
-            FileTransfer(BINARY_RSYNC_SOURCE, payload_targets["rsync"], "scp", PAYLOAD_BINARY_UPLOAD_TIMEOUT_SECONDS, "checked-in rsync"),
-            FileTransfer(GENERATED_RSYNC_CONFIG_SOURCE, payload_targets["rsyncd.conf"], "generated", FLASH_TEXT_UPLOAD_TIMEOUT_SECONDS, "generated rsync daemon config"),
             FileTransfer(BINARY_SERVICE_SOURCE, payload_targets["service"], "scp", PAYLOAD_BINARY_UPLOAD_TIMEOUT_SECONDS, "service helper for RAM staging"),
             FileTransfer(PACKAGED_RC_LOCAL_SOURCE, flash_targets["rc.local"], "flash_atomic", FLASH_TEXT_UPLOAD_TIMEOUT_SECONDS, "packaged rc.local"),
             FileTransfer(PACKAGED_COMMON_SH_SOURCE, flash_targets["common.sh"], "flash_atomic", FLASH_TEXT_UPLOAD_TIMEOUT_SECONDS, "packaged common.sh"),
@@ -325,6 +318,10 @@ def build_deployment_plan(
             StopProcessAction("mdns"),
             StopProcessAction("nbns"),
             StopProcessAction("rsync"),
+            ensure_payload_volume,
+            RemovePathAction(f"{payload_dir}/rsync"),
+            ensure_payload_volume,
+            RemovePathAction(f"{payload_dir}/rsyncd.conf"),
             StopTelemetryAction(),
             ensure_payload_volume,
             RemovePathAction(f"{payload_dir}/telemetry"),

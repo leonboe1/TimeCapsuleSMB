@@ -1493,35 +1493,8 @@ def probe_managed_rsync_conn(
     *,
     timeout_seconds: int = REMOTE_STATE_PROBE_TIMEOUT_SECONDS,
 ) -> ReadinessProbeResult:
-    payload_dir = read_runtime_payload_dir_conn(connection, timeout_seconds=timeout_seconds) or ""
-    script = rf'''
-RUNTIME_CONFIG_FILE=${{RUNTIME_CONFIG_FILE:-{FLASH_RUNTIME_CONFIG}}}
-RUNTIME_RSYNC_BIN=${{RUNTIME_RSYNC_BIN:-{RUNTIME_RSYNC_BIN}}}
-RUNTIME_RSYNC_CONF=${{RUNTIME_RSYNC_CONF:-{RUNTIME_RSYNC_CONF}}}
-RSYNC_ENABLED=0
-RUNTIME_PAYLOAD_DIR={shlex.quote(payload_dir)}
-if [ -f "$RUNTIME_CONFIG_FILE" ]; then
-    . "$RUNTIME_CONFIG_FILE"
-fi
-case "$RSYNC_ENABLED" in
-    1|true|TRUE|yes|YES) RSYNC_ENABLED=1 ;;
-    *) RSYNC_ENABLED=0 ;;
-esac
-
+    script = r"""
 status=0
-if [ -n "$RUNTIME_PAYLOAD_DIR" ] && [ -x "$RUNTIME_PAYLOAD_DIR/rsync" ]; then
-    echo "PASS:persistent rsync binary is executable"
-else
-    echo "FAIL:persistent rsync binary is missing"
-    status=1
-fi
-if [ -n "$RUNTIME_PAYLOAD_DIR" ] && [ -r "$RUNTIME_PAYLOAD_DIR/rsyncd.conf" ]; then
-    echo "PASS:persistent rsync config is present"
-else
-    echo "FAIL:persistent rsync config is missing"
-    status=1
-fi
-
 rsync_pids=
 if ps_out=$(/bin/ps axww -o pid= -o stat= -o ucomm= -o command= 2>/dev/null); then
     old_ifs=$IFS
@@ -1539,59 +1512,19 @@ if ps_out=$(/bin/ps axww -o pid= -o stat= -o ucomm= -o command= 2>/dev/null); th
         rsync_pids="$rsync_pids $1"
     done
     IFS=$old_ifs
+else
+    echo "FAIL:cannot inspect legacy rsync processes"
+    exit 1
 fi
 
-if [ "$RSYNC_ENABLED" != "1" ]; then
-    if [ -n "$rsync_pids" ]; then
-        echo "FAIL:rsync daemon is disabled but an rsync process is running"
-        status=1
-    else
-        echo "SKIP:rsync daemon is disabled and not running"
-    fi
-    exit "$status"
-fi
-
-if [ -x "$RUNTIME_RSYNC_BIN" ]; then
-    echo "PASS:managed rsync binary is executable in RAM"
-else
-    echo "FAIL:managed rsync binary is missing from RAM"
-    status=1
-fi
-if [ -r "$RUNTIME_RSYNC_CONF" ]; then
-    echo "PASS:managed rsync config is present in RAM"
-else
-    echo "FAIL:managed rsync config is missing from RAM"
-    status=1
-fi
 if [ -n "$rsync_pids" ]; then
-    echo "PASS:managed rsync process is running"
-else
-    echo "FAIL:managed rsync process is not running"
+    echo "FAIL:rsync daemon is disabled but an rsync process is running"
     status=1
-fi
-
-rsync_bound=0
-for rsync_pid in $rsync_pids; do
-    if fstat_out=$(/usr/bin/fstat -p "$rsync_pid" 2>/dev/null); then
-        fstat_ifs=$IFS
-        IFS='
-'
-        for fstat_line in $fstat_out; do
-            case "$fstat_line" in
-                *" internet stream tcp "*":873"*|*" internet6 stream tcp "*":873"*) rsync_bound=1 ;;
-            esac
-        done
-        IFS=$fstat_ifs
-    fi
-done
-if [ "$rsync_bound" -eq 1 ]; then
-    echo "PASS:managed rsync is bound to TCP 873"
 else
-    echo "FAIL:managed rsync is not bound to TCP 873"
-    status=1
+    echo "SKIP:rsync daemon is disabled and not running"
 fi
 exit "$status"
-'''
+"""
     try:
         proc = run_ssh(
             connection,

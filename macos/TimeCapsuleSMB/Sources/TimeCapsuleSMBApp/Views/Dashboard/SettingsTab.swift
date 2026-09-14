@@ -149,7 +149,6 @@ private struct DeviceProfileAdvancedSettingsView: View {
                     }
                     GridRow {
                         Toggle(L10n.string("toggle.enable_nbns"), isOn: $store.draft.nbnsEnabled)
-                        Toggle(L10n.string("toggle.enable_rsync"), isOn: $store.draft.rsyncEnabled)
                     }
                     GridRow {
                         Toggle(L10n.string("toggle.internal_share_use_disk_root"), isOn: $store.draft.internalShareUseDiskRoot)

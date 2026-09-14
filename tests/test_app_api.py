@@ -3052,7 +3052,7 @@ class AppApiTests(unittest.TestCase):
                         with mock.patch("timecapsulesmb.services.deploy.resolve_payload_artifacts", return_value=artifacts):
                             with mock.patch("timecapsulesmb.services.deploy.run_remote_actions", side_effect=AssertionError("dry run should not run remote actions")):
                                 rc = service.run_api_request(
-                                    {"operation": "deploy", "params": {"dry_run": True, "rsync_enabled": True}},
+                                    {"operation": "deploy", "params": {"dry_run": True, "rsync_enabled": False}},
                                     collector.sink,
                                 )
 
@@ -3063,7 +3063,7 @@ class AppApiTests(unittest.TestCase):
         self.assertEqual(result["payload"]["requires_reboot"], True)
         self.assertEqual(result["payload"]["startup_mode"], "reboot_then_verify")
         self.assertEqual(result["payload"]["payload_family"], "netbsd6_samba4")
-        self.assertEqual(result["payload"]["rsync_enabled"], True)
+        self.assertEqual(result["payload"]["rsync_enabled"], False)
         self.assertEqual(result["payload"]["schema_version"], 1)
 
     def test_deploy_dry_run_no_wait_returns_request_only_plan(self) -> None:
@@ -3581,7 +3581,7 @@ class AppApiTests(unittest.TestCase):
         verify_runtime.assert_called_once()
         render_runtime.assert_called_once()
         self.assertEqual(render_runtime.call_args.kwargs["internal_share_use_disk_root"], False)
-        self.assertEqual(render_runtime.call_args.kwargs["smb_bind_lan_only"], False)
+        self.assertEqual(render_runtime.call_args.kwargs["smb_bind_lan_only"], True)
         self.assertEqual(render_runtime.call_args.kwargs["smb_browse_compatibility"], True)
         self.assertEqual(render_runtime.call_args.kwargs["mdns_advertise_afp"], False)
         self.assertEqual(render_runtime.call_args.kwargs["any_protocol"], False)
@@ -3657,7 +3657,6 @@ class AppApiTests(unittest.TestCase):
                 "upload_smbd",
                 "upload_mdns_advertiser",
                 "upload_nbns_advertiser",
-                "upload_rsync",
                 "upload_boot_files",
                 "upload_runtime_config",
             ],

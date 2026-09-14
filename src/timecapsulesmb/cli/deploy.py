@@ -164,6 +164,9 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     nbns_enabled = not args.no_nbns
     rsync_enabled = bool(args.enable_rsync)
+    if rsync_enabled:
+        print("The unauthenticated rsync daemon has been removed from this fork.")
+        return 1
     mdns_advertise_afp = args.mdns_advertise_afp
     any_protocol = args.any_protocol
     vfs_aio_fork_enabled = args.vfs_aio_fork_enabled

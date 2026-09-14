@@ -189,6 +189,8 @@ def deploy_operation(params: dict[str, object], context: AppOperationContext) ->
     no_reboot = bool_param(params, "no_reboot")
     no_wait = bool_param(params, "no_wait")
     rsync_enabled = bool_param(params, "rsync_enabled")
+    if rsync_enabled:
+        raise AppOperationError("The unauthenticated rsync daemon has been removed from this fork.", code="validation_failed")
     mount_wait = int_param(params, "mount_wait", DEFAULT_APPLE_MOUNT_WAIT_SECONDS)
     allow_unsupported = bool_param(params, "allow_unsupported")
     deploy_options = DeployOptions(

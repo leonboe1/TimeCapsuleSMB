@@ -229,7 +229,6 @@ private struct InstallExecutionOptionsView: View {
                         .gridCellColumns(2)
                 }
                 GridRow {
-                    Toggle(L10n.string("toggle.enable_rsync"), isOn: $store.rsyncEnabled)
                         .gridCellColumns(2)
                 }
                 GridRow {

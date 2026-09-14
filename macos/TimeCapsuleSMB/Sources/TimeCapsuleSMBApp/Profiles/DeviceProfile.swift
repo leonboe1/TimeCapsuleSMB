@@ -86,7 +86,7 @@ struct DeviceProfileSettings: Codable, Equatable {
         ataStandby: Int? = nil
     ) {
         self.nbnsEnabled = nbnsEnabled
-        self.rsyncEnabled = rsyncEnabled
+        self.rsyncEnabled = false
         self.internalShareUseDiskRoot = internalShareUseDiskRoot
         self.smbBindLanOnly = smbBindLanOnly
         self.smbBrowseCompatibility = smbBrowseCompatibility
@@ -126,7 +126,7 @@ struct DeviceProfileSettings: Codable, Equatable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         nbnsEnabled = try container.decodeIfPresent(Bool.self, forKey: .nbnsEnabled) ?? Self.default.nbnsEnabled
-        rsyncEnabled = try container.decodeIfPresent(Bool.self, forKey: .rsyncEnabled) ?? Self.default.rsyncEnabled
+        rsyncEnabled = false // Migrate removed unauthenticated daemon settings.
         internalShareUseDiskRoot = try container.decodeIfPresent(Bool.self, forKey: .internalShareUseDiskRoot) ?? Self.default.internalShareUseDiskRoot
         smbBindLanOnly = try container.decodeIfPresent(Bool.self, forKey: .smbBindLanOnly) ?? Self.default.smbBindLanOnly
         smbBrowseCompatibility = try container.decodeIfPresent(Bool.self, forKey: .smbBrowseCompatibility) ?? Self.default.smbBrowseCompatibility

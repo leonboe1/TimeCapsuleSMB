@@ -199,7 +199,6 @@ class DeployModuleTests(unittest.TestCase):
             Path("bin/smbd"),
             Path("bin/mdns"),
             Path("bin/nbns"),
-            rsync_path=Path("bin/rsync"),
             startup_mode=startup_mode,
             wait_after_reboot=wait_after_reboot,
          service_path=Path("bin/service"))
@@ -214,7 +213,6 @@ class DeployModuleTests(unittest.TestCase):
                 smbd=Path("bin/smbd"),
                 mdns_advertiser=Path("bin/mdns"),
                 nbns_advertiser=Path("bin/nbns"),
-                rsync=Path("bin/rsync"),
              service=Path("bin/service")),
             payload_home=payload_home,
             plan=plan,
@@ -1412,16 +1410,14 @@ echo ok
 
     def test_upload_deployment_payload_uploads_all_expected_files(self) -> None:
         paths = self._payload_home("/Volumes/dk2", "samba4")
-        plan = build_deployment_plan("host", paths, Path("bin/smbd"), Path("bin/mdns"), Path("bin/nbns"), rsync_path=Path("bin/rsync"), service_path=Path("bin/service"))
+        plan = build_deployment_plan("host", paths, Path("bin/smbd"), Path("bin/mdns"), Path("bin/nbns"), service_path=Path("bin/service"))
         connection = SshConnection("host", "pw", "-o foo")
         source_resolver = {
             BINARY_SMBD_SOURCE: Path("/tmp/smbd"),
             BINARY_MDNS_SOURCE: Path("/tmp/mdns"),
             BINARY_NBNS_SOURCE: Path("/tmp/nbns"),
             BINARY_SERVICE_SOURCE: Path("/tmp/service"),
-            BINARY_RSYNC_SOURCE: Path("/tmp/rsync"),
             GENERATED_FLASH_CONFIG_SOURCE: Path("/tmp/tcapsulesmb.conf"),
-            GENERATED_RSYNC_CONFIG_SOURCE: Path("/tmp/rsyncd.conf"),
             PACKAGED_RC_LOCAL_SOURCE: Path("/tmp/rc.local"),
             PACKAGED_COMMON_SH_SOURCE: Path("/tmp/common.sh"),
             PACKAGED_BOOT_SOURCE: Path("/tmp/boot.sh"),
@@ -1440,8 +1436,8 @@ echo ok
                         on_uploading=uploading.append,
                         on_uploaded=uploaded.append,
                     )
-        self.assertEqual(scp_mock.call_count, 13)
-        self.assertEqual(mount_mock.call_count, 6)
+        self.assertEqual(scp_mock.call_count, 11)
+        self.assertEqual(mount_mock.call_count, 4)
         self.assertTrue(all(call.args[:3] == (connection, "/Volumes/dk2", "/dev/dk2") for call in mount_mock.call_args_list))
         self.assertTrue(all(call.kwargs == {"wait_seconds": DEFAULT_APPLE_MOUNT_WAIT_SECONDS} for call in mount_mock.call_args_list))
         sources = [call.args[1] for call in scp_mock.call_args_list]
@@ -1452,8 +1448,6 @@ echo ok
                 Path("/tmp/mdns"),
                 Path("/tmp/mdns"),
                 Path("/tmp/nbns"),
-                Path("/tmp/rsync"),
-                Path("/tmp/rsyncd.conf"),
                 Path("/tmp/service"),
                 Path("/tmp/rc.local"),
                 Path("/tmp/common.sh"),
@@ -1471,8 +1465,6 @@ echo ok
                 "/Volumes/dk2/samba4/mdns-advertiser",
                 "/mnt/Flash/.mdns-advertiser.tmp",
                 "/Volumes/dk2/samba4/nbns-advertiser",
-                "/Volumes/dk2/samba4/rsync",
-                "/Volumes/dk2/samba4/rsyncd.conf",
                 "/Volumes/dk2/samba4/service",
                 "/mnt/Flash/.rc.local.tmp",
                 "/mnt/Flash/.common.sh.tmp",
@@ -1500,7 +1492,7 @@ echo ok
 
     def test_upload_deployment_payload_consumes_plan_uploads_directly(self) -> None:
         paths = self._payload_home("/Volumes/dk2", "samba4")
-        plan = build_deployment_plan("host", paths, Path("bin/smbd"), Path("bin/mdns"), Path("bin/nbns"), rsync_path=Path("bin/rsync"), service_path=Path("bin/service"))
+        plan = build_deployment_plan("host", paths, Path("bin/smbd"), Path("bin/mdns"), Path("bin/nbns"), service_path=Path("bin/service"))
         custom_plan = replace(
             plan,
             uploads=[
@@ -1603,7 +1595,7 @@ echo ok
 
     def test_upload_deployment_payload_stops_when_payload_volume_guard_fails(self) -> None:
         paths = self._payload_home("/Volumes/dk2", "samba4")
-        plan = build_deployment_plan("host", paths, Path("bin/smbd"), Path("bin/mdns"), Path("bin/nbns"), rsync_path=Path("bin/rsync"), service_path=Path("bin/service"))
+        plan = build_deployment_plan("host", paths, Path("bin/smbd"), Path("bin/mdns"), Path("bin/nbns"), service_path=Path("bin/service"))
         connection = SshConnection("host", "pw", "-o foo")
         source_resolver = {
             BINARY_SMBD_SOURCE: Path("/tmp/smbd"),
@@ -1618,7 +1610,7 @@ echo ok
 
     def test_upload_deployment_payload_fails_for_missing_planned_source(self) -> None:
         paths = self._payload_home("/Volumes/dk2", "samba4")
-        plan = build_deployment_plan("host", paths, Path("bin/smbd"), Path("bin/mdns"), Path("bin/nbns"), rsync_path=Path("bin/rsync"), service_path=Path("bin/service"))
+        plan = build_deployment_plan("host", paths, Path("bin/smbd"), Path("bin/mdns"), Path("bin/nbns"), service_path=Path("bin/service"))
         connection = SshConnection("host", "pw", "-o foo")
         with self.assertRaisesRegex(KeyError, "No local source for planned transfer 'binary:smbd'"):
             upload_deployment_payload(plan, connection=connection, source_resolver={})
@@ -2266,7 +2258,7 @@ describe_managed_smbd_status "" ""
         self.assertTrue(result.ready)
         self.assertIn("SKIP:rsync daemon is disabled and not running", result.lines)
         remote_cmd = run_ssh_mock.call_args.args[1]
-        self.assertIn('RUNTIME_PAYLOAD_DIR=/Volumes/dk2/.samba4', remote_cmd)
+        self.assertNotIn('persistent rsync binary is missing', remote_cmd)
         self.assertIn('[ "$3" = rsync ]', remote_cmd)
         self.assertNotIn("pid file", remote_cmd.lower())
 
@@ -2766,7 +2758,7 @@ describe_managed_smbd_status "" ""
         payload_dir_name = "samba4"
         payload_dir = f"/Volumes/dk2/{payload_dir_name}"
         paths = self._payload_home("/Volumes/dk2", payload_dir_name)
-        plan = build_deployment_plan("root@10.0.0.2", paths, Path("bin/smbd"), Path("bin/mdns"), Path("bin/nbns"), rsync_path=Path("bin/rsync"), service_path=Path("bin/service"))
+        plan = build_deployment_plan("root@10.0.0.2", paths, Path("bin/smbd"), Path("bin/mdns"), Path("bin/nbns"), service_path=Path("bin/service"))
         text = format_deployment_plan(plan)
         self.assertIn("volume root: /Volumes/dk2", text)
         self.assertEqual(plan.device_path, "/dev/dk2")
@@ -2784,8 +2776,6 @@ describe_managed_smbd_status "" ""
         self.assertNotIn("generated smbpasswd", text)
         self.assertNotIn("generated:username.map", text)
         self.assertIn("generated flash runtime config (generated:tcapsulesmb.conf, flash_atomic, timeout 120s) -> /mnt/Flash/tcapsulesmb.conf", text)
-        self.assertIn(f"checked-in rsync ({BINARY_RSYNC_SOURCE}, scp, timeout 180s) -> {payload_dir}/rsync", text)
-        self.assertIn(f"generated rsync daemon config ({GENERATED_RSYNC_CONFIG_SOURCE}, generated, timeout 120s) -> {payload_dir}/rsyncd.conf", text)
         self.assertIn("/usr/bin/pkill '^rsync$' >/dev/null 2>&1 || true", text)
         self.assertIn("ln -s /mnt/Memory/samba4 /root/tc-netbsd4", text)
         self.assertIn("ln -s /mnt/Memory/samba4 /root/tc-netbsd4le", text)
@@ -2801,7 +2791,6 @@ describe_managed_smbd_status "" ""
             Path("bin/smbd"),
             Path("bin/mdns"),
             Path("bin/nbns"),
-            rsync_path=Path("bin/rsync"),
             startup_mode=DEPLOY_STARTUP_REBOOT_THEN_ACTIVATE,
          service_path=Path("bin/service"))
         self.assertTrue(plan.reboot_required)
@@ -2832,7 +2821,6 @@ describe_managed_smbd_status "" ""
             Path("bin/smbd"),
             Path("bin/mdns"),
             Path("bin/nbns"),
-            rsync_path=Path("bin/rsync"),
             startup_mode=DEPLOY_STARTUP_ACTIVATE_NOW,
          service_path=Path("bin/service"))
         self.assertFalse(plan.reboot_required)
@@ -2866,22 +2854,9 @@ describe_managed_smbd_status "" ""
         self.assertIn("follow-up: run /mnt/Flash/rc.local without rebooting", text)
         self.assertIn("managed runtime smb.conf is present", text)
 
-    def test_enabled_rsync_plan_requires_daemon_readiness(self) -> None:
-        paths = self._payload_home("/Volumes/dk2", "samba4")
-        plan = build_deployment_plan(
-            "root@10.0.0.2",
-            paths,
-            Path("bin/smbd"),
-            Path("bin/mdns"),
-            Path("bin/nbns"),
-            rsync_path=Path("bin/rsync"),
-            rsync_enabled=True,
-            startup_mode=DEPLOY_STARTUP_ACTIVATE_NOW,
-         service_path=Path("bin/service"))
-
-        self.assertTrue(plan.rsync_enabled)
-        self.assertIn("managed_rsync_ready", [check.id for check in plan.post_deploy_checks])
-        self.assertNotIn("managed_rsync_disabled", [check.id for check in plan.post_deploy_checks])
+    def test_enabled_rsync_plan_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "removed from this fork"):
+            build_deployment_plan("host", self._payload_home("/Volumes/dk2", "samba4"), Path("smbd"), Path("mdns"), Path("nbns"), service_path=Path("service"), rsync_enabled=True)
 
     def test_reboot_then_activate_no_wait_plan_skips_post_reboot_activation_and_checks(self) -> None:
         paths = self._payload_home("/Volumes/dk2", "samba4")
@@ -2891,7 +2866,6 @@ describe_managed_smbd_status "" ""
             Path("bin/smbd"),
             Path("bin/mdns"),
             Path("bin/nbns"),
-            rsync_path=Path("bin/rsync"),
             startup_mode=DEPLOY_STARTUP_REBOOT_THEN_ACTIVATE,
             wait_after_reboot=False,
          service_path=Path("bin/service"))
@@ -3027,13 +3001,13 @@ describe_managed_smbd_status "" ""
 
     def test_deployment_plan_uses_install_permissions_action(self) -> None:
         paths = self._payload_home("/Volumes/dk2", "Time Capsule Samba 4")
-        plan = build_deployment_plan("host", paths, Path("bin/smbd"), Path("bin/mdns"), Path("bin/nbns"), rsync_path=Path("bin/rsync"), service_path=Path("bin/service"))
+        plan = build_deployment_plan("host", paths, Path("bin/smbd"), Path("bin/mdns"), Path("bin/nbns"), service_path=Path("bin/service"))
         self.assertEqual(plan.post_upload_actions[0], EnsureVolumeMountedAction("/Volumes/dk2", "/dev/dk2", DEFAULT_APPLE_MOUNT_WAIT_SECONDS))
         self.assertIn(InstallPermissionsAction(tuple(plan.permissions)), plan.post_upload_actions)
 
     def test_deployment_plan_guards_each_payload_write_action(self) -> None:
         paths = self._payload_home("/Volumes/dk2", "samba4")
-        plan = build_deployment_plan("host", paths, Path("bin/smbd"), Path("bin/mdns"), Path("bin/nbns"), rsync_path=Path("bin/rsync"), service_path=Path("bin/service"))
+        plan = build_deployment_plan("host", paths, Path("bin/smbd"), Path("bin/mdns"), Path("bin/nbns"), service_path=Path("bin/service"))
         expected_guard = EnsureVolumeMountedAction("/Volumes/dk2", "/dev/dk2", DEFAULT_APPLE_MOUNT_WAIT_SECONDS)
 
         for index, action in enumerate(plan.pre_upload_actions):
@@ -3053,7 +3027,7 @@ describe_managed_smbd_status "" ""
 
     def test_deployment_plan_marks_uploaded_payload_binaries_executable(self) -> None:
         paths = self._payload_home("/Volumes/dk2", "samba4")
-        plan = build_deployment_plan("host", paths, Path("bin/smbd"), Path("bin/mdns"), Path("bin/nbns"), rsync_path=Path("bin/rsync"), service_path=Path("bin/service"))
+        plan = build_deployment_plan("host", paths, Path("bin/smbd"), Path("bin/mdns"), Path("bin/nbns"), service_path=Path("bin/service"))
         executable_permissions = {permission.path for permission in plan.permissions if permission.mode == "755"}
 
         self.assertIn("/Volumes/dk2/samba4/smbd", executable_permissions)

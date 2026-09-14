@@ -24,18 +24,6 @@
       "path": "bin/nbns-netbsd4be/nbns-advertiser",
       "sha256": "f0a05bdf0bc899f9b232d5be1d78241a9ca5baee0196bdcfd1699baebc124a34"
     },
-    "rsync": {
-      "path": "bin/rsync/rsync",
-      "sha256": "5f0908da9e958b34b88915a29d5e66a14f7ef383ba77c9ade22d91ad956fe28f"
-    },
-    "rsync-netbsd4le": {
-      "path": "bin/rsync-netbsd4le/rsync",
-      "sha256": "c081d71d38a0b05507807c8bb7d4f8f1adf0569aae5617b72bfd5a305fb722e4"
-    },
-    "rsync-netbsd4be": {
-      "path": "bin/rsync-netbsd4be/rsync",
-      "sha256": "4a53d16c4d5196b410986c58dbc4153f85ba682ccd9c07108e0b7f126c106312"
-    },
     "smbd": {
       "path": "bin/samba4/smbd",
       "sha256": "b2092a6f9f9472f5304701c51e2367481b88102366d21099955e206ad25cc2fd"

@@ -18,7 +18,6 @@
 .PHONY: advertisers advertisers-netbsd7 advertisers-netbsd4le advertisers-netbsd4be advertisers-all
 .PHONY: samba4 samba4-netbsd7 samba4-netbsd4le samba4-netbsd4be samba4-all
 .PHONY: samba4x samba4x-netbsd7 samba4x-netbsd4le samba4x-netbsd4be samba4x-all
-.PHONY: rsync rsync-netbsd7 rsync-netbsd4le rsync-netbsd4be rsync-all
 .PHONY: hello hello-netbsd7 hello-netbsd4le hello-netbsd4be hello-all
 .PHONY: sdk-download-netbsd7 sdk-download-netbsd4le sdk-download-netbsd4be
 .PHONY: sdk-bootstrap-netbsd7 sdk-bootstrap-netbsd4le sdk-bootstrap-netbsd4be
@@ -37,9 +36,6 @@ help:
 	@printf '%s\n' '  make samba4-netbsd7        # download Samba 4 source, then build NetBSD 6/7 lane'
 	@printf '%s\n' '  make samba4-netbsd4le      # download Samba 4 source, then build NetBSD 4 LE lane'
 	@printf '%s\n' '  make samba4-netbsd4be      # download Samba 4 source, then build NetBSD 4 BE lane'
-	@printf '%s\n' '  make rsync-netbsd7         # download rsync source, then build NetBSD 6/7 lane'
-	@printf '%s\n' '  make rsync-netbsd4le       # download rsync source, then build NetBSD 4 LE lane'
-	@printf '%s\n' '  make rsync-netbsd4be       # download rsync source, then build NetBSD 4 BE lane'
 	@printf '%s\n' ''
 	@printf '%s\n' 'Toolchain targets are explicit only:'
 	@printf '%s\n' '  make sdk-download-netbsd7'
@@ -54,14 +50,11 @@ require-build-tree:
 	for path in \
 		env.sh \
 		_patch_helpers.sh \
-		_downloadrsync.sh \
-		_rsync.sh \
 		native/common/network.h \
 		native/mdns.sources \
 		native/nbns.sources \
 		native/service.sources \
 		samba4-cross-exec.sh \
-		patches/rsync/series \
 		patches/samba4x/series \
 		patches/gnutls/series \
 		cross-answers/samba4x-4.25.0rc2-netbsd7.answers \
@@ -194,26 +187,6 @@ samba4x-netbsd4be: require-build-tree
 
 samba4x-all: require-build-tree
 	./samba4xall.sh
-
-rsync: require-build-tree rsync-netbsd7
-
-rsync-netbsd7: require-build-tree
-	./downloadrsync.sh
-	./rsync.sh
-
-rsync-netbsd4le: require-build-tree
-	./downloadrsync.sh
-	./rsyncoldle.sh
-
-rsync-netbsd4be: require-build-tree
-	./downloadrsync.sh
-	./rsyncoldbe.sh
-
-rsync-all: require-build-tree
-	./downloadrsync.sh
-	./rsync.sh
-	./rsyncoldle.sh
-	./rsyncoldbe.sh
 
 hello: require-build-tree hello-netbsd7
 

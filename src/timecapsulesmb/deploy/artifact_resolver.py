@@ -39,7 +39,6 @@ def resolve_payload_artifacts(distribution_root: Path, payload_family: str) -> d
             "mdns": "mdns-netbsd4le",
             "nbns": "nbns-netbsd4le",
             "service": "service-netbsd4le",
-            "rsync": "rsync-netbsd4le",
         }
     elif payload_family == PAYLOAD_FAMILY_NETBSD4BE:
         names = {
@@ -47,7 +46,6 @@ def resolve_payload_artifacts(distribution_root: Path, payload_family: str) -> d
             "mdns": "mdns-netbsd4be",
             "nbns": "nbns-netbsd4be",
             "service": "service-netbsd4be",
-            "rsync": "rsync-netbsd4be",
         }
     elif payload_family == PAYLOAD_FAMILY_NETBSD6:
         names = {
@@ -55,7 +53,6 @@ def resolve_payload_artifacts(distribution_root: Path, payload_family: str) -> d
             "mdns": "mdns",
             "nbns": "nbns",
             "service": "service",
-            "rsync": "rsync",
         }
     else:
         raise KeyError(f"Unknown payload family: {payload_family}")

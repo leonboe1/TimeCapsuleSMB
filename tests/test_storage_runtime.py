@@ -1226,15 +1226,9 @@ MaSt = (
         self.assertNotIn("MDNS_HOST_LABEL", rendered)
         self.assertNotIn("TC_SHARE_NAME", rendered)
 
-    def test_flash_runtime_config_can_enable_rsync(self) -> None:
-        rendered = render_flash_runtime_config(
-            AppConfig.from_values({}),
-            PayloadHome("/Volumes/dk2", "/dev/dk2", ".samba4"),
-            nbns_enabled=True,
-            rsync_enabled=True,
-        )
-
-        self.assertIn("RSYNC_ENABLED=1\n", rendered)
+    def test_flash_runtime_config_rejects_rsync(self) -> None:
+        with self.assertRaisesRegex(ValueError, "removed from this fork"):
+            render_flash_runtime_config(None, None, nbns_enabled=False, rsync_enabled=True)
 
     def test_rsync_daemon_config_exposes_payload_volume_share_root_without_pid_file(self) -> None:
         rendered = render_rsync_daemon_config(PayloadHome("/Volumes/dk5", "/dev/dk5", ".samba4"))
@@ -1634,7 +1628,6 @@ MaSt = (
             Path("/tmp/smbd"),
             Path("/tmp/mdns"),
             Path("/tmp/nbns"),
-            rsync_path=Path("/tmp/rsync"),
          service_path=Path("bin/service"))
         source_ids = {upload.source_id for upload in plan.uploads}
 
@@ -6044,133 +6037,7 @@ MaSt = (
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertEqual(proc.stdout, "stop:rsync:rsync\n")
 
-    def test_common_manager_stages_and_starts_enabled_rsync_without_pid_file(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp_path = Path(tmp)
-            flash, memory, _locks, volumes = self.write_runtime_harness(tmp_path)
-            payload = volumes / "dk2/.samba4"
-            payload.mkdir(parents=True)
-            started_args = tmp_path / "rsync-args.txt"
-            (payload / "rsync").write_text(
-                "#!/bin/sh\n"
-                f"printf '%s\\n' \"$@\" >{shlex.quote(str(started_args))}\n"
-            )
-            (payload / "rsync").chmod(0o755)
-            (payload / "rsyncd.conf").write_text("[shareroot]\npath = /Volumes/dk2/ShareRoot\n")
-            script = tmp_path / "manager-rsync-enabled.sh"
-            script.write_text(
-                textwrap.dedent(
-                    f"""\
-                    #!/bin/sh
-                    set -eu
-                    . {flash}/common.sh
-                    . {flash}/tcapsulesmb.conf
-                    RSYNC_ENABLED=1
-                    tc_init_runtime_env
-                    mkdir -p "$RAM_SBIN" "$RAM_ETC" "$RAM_VAR"
-                    tc_manager_select_current_payload() {{
-                        manager_payload_dir={shlex.quote(str(payload))}
-                        manager_payload_volume={shlex.quote(str(volumes / 'dk9'))}
-                        manager_payload_device=/dev/dk9
-                        return 0
-                    }}
-                    is_volume_root_mounted() {{ return 0; }}
-                    runtime_process_present_by_ucomm() {{ return 1; }}
-                    tc_manager_file_metadata_signature() {{ printf 'file:%s\\n' "$1"; }}
-                    tc_wait_for_rsync_ready() {{ return 0; }}
-                    tc_manager_reconcile_rsync
-                    wait
-                    [ -x "$TC_RSYNC_BIN" ]
-                    [ -r "$TC_RSYNC_CONF" ]
-                    """
-                )
-            )
-            script.chmod(0o755)
 
-            proc = subprocess.run([str(script)], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
-            started_arg_lines = started_args.read_text().splitlines() if started_args.exists() else []
-            staged_config_path = memory / "samba4/etc/rsyncd.conf"
-            staged_config = staged_config_path.read_text() if staged_config_path.exists() else ""
-            pid_files = list((memory / "samba4").rglob("*.pid"))
-
-        self.assertEqual(proc.returncode, 0, proc.stderr)
-        self.assertEqual(
-            started_arg_lines,
-            ["--daemon", "--no-detach", f"--config={memory}/samba4/etc/rsyncd.conf"],
-        )
-        self.assertEqual(staged_config, f"[shareroot]\npath = {volumes}/dk9/ShareRoot\n")
-        self.assertEqual(pid_files, [])
-
-    def test_common_manager_stops_daemon_before_bounding_rsync_log_and_restarts_it(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            tmp_path = Path(tmp)
-            flash, memory, _locks, volumes = self.write_runtime_harness(tmp_path)
-            payload = volumes / "dk2/.samba4"
-            payload.mkdir(parents=True)
-            (payload / "rsync").write_text("#!/bin/sh\nexit 0\n")
-            (payload / "rsync").chmod(0o755)
-            (payload / "rsyncd.conf").write_text("[shareroot]\npath = /Volumes/dk2/ShareRoot\n")
-            runtime_root = memory / "samba4"
-            (runtime_root / "sbin").mkdir(parents=True)
-            (runtime_root / "etc").mkdir(parents=True)
-            (runtime_root / "var").mkdir(parents=True)
-            (runtime_root / "sbin/rsync").write_text("#!/bin/sh\nexit 0\n")
-            (runtime_root / "sbin/rsync").chmod(0o755)
-            (runtime_root / "etc/rsyncd.conf").write_text("[shareroot]\npath = /Volumes/dk2/ShareRoot\n")
-            rsync_log = runtime_root / "var/rsync.log"
-            rsync_log.write_text("x" * 65536)
-            stop_calls = tmp_path / "stop-calls.txt"
-            wait_calls = tmp_path / "wait-calls.txt"
-            script = tmp_path / "manager-rsync-bound-log.sh"
-            script.write_text(
-                textwrap.dedent(
-                    f"""\
-                    #!/bin/sh
-                    set -eu
-                    . {flash}/common.sh
-                    . {flash}/tcapsulesmb.conf
-                    RSYNC_ENABLED=1
-                    tc_init_runtime_env
-                    tc_manager_select_current_payload() {{
-                        manager_payload_dir={shlex.quote(str(payload))}
-                        manager_payload_volume={shlex.quote(str(volumes / 'dk2'))}
-                        manager_payload_device=/dev/dk2
-                        return 0
-                    }}
-                    is_volume_root_mounted() {{ return 0; }}
-                    rsync_running=1
-                    runtime_process_present_by_ucomm() {{
-                        [ "$1" = "$RSYNC_PROC_NAME" ] && [ "$rsync_running" = "1" ]
-                    }}
-                    tc_stop_rsync_if_running() {{
-                        printf 'stop\\n' >>{shlex.quote(str(stop_calls))}
-                        rsync_running=0
-                    }}
-                    tc_rsync_bound_tcp_873() {{ return 0; }}
-                    tc_wait_for_rsync_ready() {{
-                        printf 'wait\\n' >>{shlex.quote(str(wait_calls))}
-                        return 0
-                    }}
-                    tc_manager_file_metadata_signature() {{ printf 'file:%s\\n' "$1"; }}
-                    TC_MANAGER_LAST_RSYNC_SIGNATURE=$(tc_manager_rsync_file_signature \
-                        {shlex.quote(str(payload))} \
-                        {shlex.quote(str(payload / 'rsync'))} \
-                        {shlex.quote(str(payload / 'rsyncd.conf'))})
-                    tc_manager_reconcile_rsync
-                    """
-                )
-            )
-            script.chmod(0o755)
-
-            proc = subprocess.run([str(script)], text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
-            bounded_log_size = rsync_log.stat().st_size
-            recorded_stop_calls = stop_calls.read_text().splitlines()
-            recorded_wait_calls = wait_calls.read_text().splitlines()
-
-        self.assertEqual(proc.returncode, 0, proc.stderr)
-        self.assertLessEqual(bounded_log_size, 32768)
-        self.assertEqual(recorded_stop_calls, ["stop"])
-        self.assertEqual(recorded_wait_calls, ["wait"])
 
     def test_common_manager_defers_nbns_when_running_without_udp_137_and_no_auto_ip(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
