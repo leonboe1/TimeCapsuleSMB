@@ -394,9 +394,13 @@ def build_uninstall_plan(
         "mdns": "/mnt/Flash/mdns-advertiser",
         "tcapsulesmb.conf": "/mnt/Flash/tcapsulesmb.conf",
     }
+    flash_temporary_targets = [f"/mnt/Flash/.{name}.deploy-new" for name in (
+        "rc.local", "common.sh", "boot.sh", "manager.sh", "dfree.sh", "mdns-advertiser", "tcapsulesmb.conf",
+    )]
     verify_absent_targets = [
         *(f"{payload_dir}/{name}" for payload_dir in payload_dirs for name in MANAGED_PAYLOAD_FILES),
         *flash_targets.values(),
+        *flash_temporary_targets,
         "/mnt/Memory/samba4",
         "/mnt/Memory/debug",
         "/mnt/Memory/debug.sig",
@@ -435,6 +439,7 @@ def build_uninstall_plan(
             RemovePathAction(flash_targets["mdns"]),
             RemovePathAction("/mnt/Flash/mdns"),
             RemovePathAction(flash_targets["tcapsulesmb.conf"]),
+            *(RemovePathAction(path) for path in flash_temporary_targets),
             RemovePathAction("/mnt/Memory/samba4"),
             RemovePathAction("/root/tc-netbsd7"),
             RemovePathAction("/root/tc-netbsd4"),

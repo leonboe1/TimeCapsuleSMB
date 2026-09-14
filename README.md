@@ -264,6 +264,14 @@ If you want the results in JSON instead of human-readable text, use:
 .venv/bin/tcapsule doctor --json
 ```
 
+### Interrupted updates and recovery
+
+Deploy uploads the complete replacement into `.samba4/.deploy-transaction`, verifies every file by reading it back and comparing SHA-256, and saves the previous program and configuration files on the disk. It disables managed boot before replacing active files and installs `rc.local` last. Disk staging needs additional free space for the new files, previous files, and a temporary replacement file; Flash needs space for one temporary file at a time.
+
+An upload failure leaves active programs untouched. A replacement or runtime-verification failure restores previous program files when SSH and the disk remain available, but leaves managed startup disabled: automatically running an old installation could re-enable removed unsafe code. Reconnect and rerun the same `tcapsule deploy` command to recover an interrupted replacement and install a complete version. Do not manually execute saved boot scripts. If a forcibly terminated client leaves its RAM lock behind, first ensure that client has stopped, then reboot the device and rerun deploy. The recovery guard prevents managed startup during an incomplete replacement. An invalid journal or lock requires inspection; the tool refuses to guess or overwrite unrelated files.
+
+After successful runtime verification, the previous program snapshot remains under `.samba4/.deploy-previous`. If you skip verification or decline a reboot, it remains in `.deploy-transaction` until the next deploy. These snapshots do not include your backups or `.samba4/private/xattr.tdb`, which remains in its original location. They cannot repair filesystem corruption or replace an independent backup. Before using this experimental runtime on irreplaceable backups, make a separate copy and validate backup and restore on disposable data.
+
 ## Step 6: Remove It Later If Needed
 
 Run:

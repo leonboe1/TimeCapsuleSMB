@@ -3445,7 +3445,7 @@ class AppApiTests(unittest.TestCase):
                             with mock.patch("timecapsulesmb.services.storage.wait_for_mast_volumes_conn", return_value=SimpleNamespace(volumes=("dk2",), attempts=1, raw_output="")):
                                 with mock.patch("timecapsulesmb.services.deploy.select_payload_home_with_diagnostics_conn", return_value=SimpleNamespace(payload_home=payload_home)):
                                     with mock.patch("timecapsulesmb.services.deploy.verify_payload_home_conn", return_value=SimpleNamespace(ok=True, detail="ok")):
-                                        with mock.patch("timecapsulesmb.services.deploy.upload_deployment_payload") as upload:
+                                        with mock.patch("timecapsulesmb.services.deploy.upload_deployment_payload", side_effect=lambda *a, before_commit, **k: before_commit()) as upload:
                                             with mock.patch("timecapsulesmb.services.deploy.run_remote_actions"):
                                                 with mock.patch("timecapsulesmb.services.deploy.flush_remote_filesystem_writes"):
                                                     with mock.patch("timecapsulesmb.services.runtime_verification.probe_managed_runtime_conn", return_value=managed_runtime_probe()):
@@ -3555,7 +3555,7 @@ class AppApiTests(unittest.TestCase):
                             with mock.patch("timecapsulesmb.services.storage.wait_for_mast_volumes_conn", return_value=SimpleNamespace(volumes=("dk2",), attempts=1, raw_output="")):
                                 with mock.patch("timecapsulesmb.services.deploy.select_payload_home_with_diagnostics_conn", return_value=SimpleNamespace(payload_home=payload_home)):
                                     with mock.patch("timecapsulesmb.services.deploy.verify_payload_home_conn", return_value=SimpleNamespace(ok=True, detail="ok")):
-                                        with mock.patch("timecapsulesmb.services.deploy.upload_deployment_payload") as upload:
+                                        with mock.patch("timecapsulesmb.services.deploy.upload_deployment_payload", side_effect=lambda *a, before_commit, **k: before_commit()) as upload:
                                             with mock.patch("timecapsulesmb.services.deploy.run_remote_actions") as remote_actions:
                                                 with mock.patch("timecapsulesmb.services.deploy.flush_remote_filesystem_writes"):
                                                     with mock.patch("timecapsulesmb.services.deploy.request_reboot_and_wait") as wait:
@@ -4075,6 +4075,8 @@ class AppApiTests(unittest.TestCase):
                                                 side_effect=run_remote_actions_side_effect,
                                             )
                                         )
+                                    if upload_side_effect is None and run_remote_actions_side_effect is not None:
+                                        upload_side_effect = lambda *a, before_commit, **k: before_commit()
                                     if upload_side_effect is not None:
                                         stack.enter_context(
                                             mock.patch(

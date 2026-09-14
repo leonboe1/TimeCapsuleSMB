@@ -3,7 +3,8 @@ from __future__ import annotations
 from dataclasses import asdict
 
 from timecapsulesmb.core.messages import NETBSD4_REBOOT_GUIDANCE
-from timecapsulesmb.deploy.commands import remote_actions_to_jsonable, render_remote_actions
+from timecapsulesmb.deploy.commands import RemovePayloadProgramsAction, remote_actions_to_jsonable, render_remote_action, render_remote_actions
+from timecapsulesmb.device.storage import UNINSTALL_DRY_RUN_VOLUME_ROOT_PLACEHOLDER
 from timecapsulesmb.deploy.planner import (
     DEPLOY_STARTUP_ACTIVATE_NOW,
     DEPLOY_STARTUP_REBOOT_THEN_ACTIVATE,
@@ -100,14 +101,19 @@ def format_deployment_plan(plan: DeploymentPlan) -> str:
     lines.append("Boot options:")
     lines.append(f"  diskd.useVolume wait: {plan.apple_mount_wait_seconds}s per attempt")
     lines.append("")
-    lines.append("Remote actions (pre-upload):")
+    lines.append("Deployment safety:")
+    lines.append("  stage and SHA-256 verify every new file before changing active programs")
+    lines.append("  keep previous program files on disk; disable boot while replacing files")
+    lines.append("  install rc.local last; retain recovery files until runtime verification")
+    lines.append("")
+    lines.append("Remote actions (after staging, before replacement):")
     for command in render_remote_actions(plan.pre_upload_actions):
         lines.append(f"  {command}")
     lines.append("")
     lines.append("Uploads:")
     for upload in plan.uploads:
         timeout = f", timeout {upload.timeout_seconds}s" if upload.timeout_seconds is not None else ""
-        lines.append(f"  {upload.description} ({upload.source_id}, {upload.mode}{timeout}) -> {upload.destination}")
+        lines.append(f"  {upload.description} ({upload.source_id}, staged{timeout}) -> {upload.destination}")
     lines.append("")
     lines.append("Remote actions (post-upload):")
     for command in render_remote_actions(plan.post_upload_actions):
@@ -155,6 +161,13 @@ def deployment_plan_to_jsonable(plan: DeploymentPlan) -> dict[str, object]:
     data["post_upload_actions"] = remote_actions_to_jsonable(plan.post_upload_actions)
     data["activation_actions"] = remote_actions_to_jsonable(plan.activation_actions)
     data["runtime_startup"] = _runtime_startup_json(plan)
+    data["deployment_safety"] = {
+        "upload_destination": f"{plan.payload_dir}/.deploy-transaction/new",
+        "content_verification": "SHA-256 readback before and after replacement",
+        "boot_entry_point_installed_last": True,
+        "previous_programs": f"{plan.payload_dir}/.deploy-previous/old",
+        "failure_behavior": "restore previous program files and disable managed startup; rerun deploy",
+    }
     _add_reboot_request_json(data, plan.reboot_required, strategy=DEPLOY_REBOOT_STRATEGY, wait_after_reboot=plan.wait_after_reboot)
     return data
 
@@ -210,8 +223,11 @@ def format_uninstall_plan(plan: UninstallPlan) -> str:
         lines.append(f"  {directory}")
     lines.append("")
     lines.append("Remote actions:")
-    for command in render_remote_actions(plan.remote_actions):
-        lines.append(f"  {command}")
+    for action in plan.remote_actions:
+        if isinstance(action, RemovePayloadProgramsAction) and action.path.startswith(UNINSTALL_DRY_RUN_VOLUME_ROOT_PLACEHOLDER + "/"):
+            lines.append(f"  remove managed programs under {action.path}; preserve private metadata and other data")
+        else:
+            lines.append(f"  {render_remote_action(action)}")
     lines.append("")
     lines.append("Reboot:")
     lines.append(f"  {'yes' if plan.reboot_required else 'no'}")

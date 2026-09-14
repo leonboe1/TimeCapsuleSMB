@@ -965,7 +965,10 @@ class CliTests(unittest.TestCase):
                 mocks.run_remote_actions = stack.enter_context(mock.patch("timecapsulesmb.services.deploy.run_remote_actions"))
             if patch_upload:
                 mocks.upload_deployment_payload = stack.enter_context(
-                    mock.patch("timecapsulesmb.services.deploy.upload_deployment_payload", side_effect=upload_side_effect)
+                    mock.patch(
+                        "timecapsulesmb.services.deploy.upload_deployment_payload",
+                        side_effect=upload_side_effect or (lambda *a, before_commit, **k: before_commit()),
+                    )
                 )
             mocks.flush_remote_filesystem_writes = stack.enter_context(
                 mock.patch("timecapsulesmb.services.deploy.flush_remote_filesystem_writes")

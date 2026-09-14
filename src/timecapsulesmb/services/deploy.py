@@ -21,6 +21,7 @@ from timecapsulesmb.deploy.dry_run import (
 )
 from timecapsulesmb.deploy.executor import flush_remote_filesystem_writes, run_remote_actions, upload_deployment_payload
 from timecapsulesmb.deploy.commands import RemoteAction, StopProcessAction
+from timecapsulesmb.deploy.transaction import DeploymentTransaction
 from timecapsulesmb.deploy.planner import (
     BINARY_MDNS_SOURCE,
     BINARY_NBNS_SOURCE,
@@ -759,7 +760,7 @@ def upload_and_verify_deployment_payload(
     verify_payload_home=None,
     flush_remote_writes=None,
     dependencies: DeployServiceDependencies | None = None,
-) -> None:
+) -> DeploymentTransaction | None:
     callbacks = callbacks or OperationCallbacks()
     dependencies = dependencies or default_deploy_service_dependencies()
     if run_remote_actions_func is None:
@@ -784,13 +785,17 @@ def upload_and_verify_deployment_payload(
             upload_transport=scp_upload_transport(connection),
         )
 
-    callbacks.stage("pre_upload_actions")
-    try:
-        run_remote_actions_func(connection, plan.pre_upload_actions, on_action_done=on_pre_upload_action_done)
-    except Exception as exc:
-        if _manager_stop_timed_out(exc):
-            raise DeployDeviceError(MANAGER_STOP_TIMEOUT_MESSAGE, code="manager_stop_timeout") from exc
-        raise
+    def before_commit() -> None:
+        callbacks.stage("pre_upload_actions")
+        try:
+            run_remote_actions_func(connection, plan.pre_upload_actions, on_action_done=on_pre_upload_action_done)
+        except Exception as exc:
+            if _manager_stop_timed_out(exc):
+                raise DeployDeviceError(MANAGER_STOP_TIMEOUT_MESSAGE, code="manager_stop_timeout") from exc
+            raise
+        callbacks.stage("commit_payload")
+
+    transaction = None
     callbacks.stage("prepare_deployment_files")
     flash_config_text = render_flash_config_func(
         config,
@@ -862,9 +867,11 @@ def upload_and_verify_deployment_payload(
             "source_resolver": upload_sources,
             "on_uploaded": record_uploaded,
             "on_uploading": record_uploading,
+            "before_commit": before_commit,
+            "on_recovery": callbacks.message,
         }
         try:
-            upload_payload_func(plan, **_upload_payload_kwargs_for_func(upload_payload_func, upload_kwargs))
+            transaction = upload_payload_func(plan, **_upload_payload_kwargs_for_func(upload_payload_func, upload_kwargs))
         except Exception as exc:
             upload_batch_result = "failure"
             if active_upload is not None:
@@ -890,41 +897,50 @@ def upload_and_verify_deployment_payload(
                 result=upload_batch_result,
             )
             update_scp_upload_telemetry()
+
+    try:
         if on_after_upload is not None:
             on_after_upload()
-
-    callbacks.stage("post_upload_actions")
-    if on_before_post_upload_actions is not None:
-        on_before_post_upload_actions()
-    run_remote_actions_func(connection, plan.post_upload_actions)
-    if on_before_verify is not None:
-        on_before_verify(False)
-    _verify_deployed_payload(
-        callbacks,
-        connection,
-        payload_home,
-        wait_seconds=plan.apple_mount_wait_seconds,
-        post_sync=False,
-        verify_payload_home=verify_payload_home,
-        on_verified=on_verified,
-        dependencies=dependencies,
-    )
-    callbacks.stage("flush_payload_upload")
-    if on_before_flush is not None:
-        on_before_flush()
-    flush_remote_writes(connection)
-    if on_before_verify is not None:
-        on_before_verify(True)
-    _verify_deployed_payload(
-        callbacks,
-        connection,
-        payload_home,
-        wait_seconds=plan.apple_mount_wait_seconds,
-        post_sync=True,
-        verify_payload_home=verify_payload_home,
-        on_verified=on_verified,
-        dependencies=dependencies,
-    )
+        callbacks.stage("post_upload_actions")
+        if on_before_post_upload_actions is not None:
+            on_before_post_upload_actions()
+        run_remote_actions_func(connection, plan.post_upload_actions)
+        if on_before_verify is not None:
+            on_before_verify(False)
+        _verify_deployed_payload(
+            callbacks,
+            connection,
+            payload_home,
+            wait_seconds=plan.apple_mount_wait_seconds,
+            post_sync=False,
+            verify_payload_home=verify_payload_home,
+            on_verified=on_verified,
+            dependencies=dependencies,
+        )
+        callbacks.stage("flush_payload_upload")
+        if on_before_flush is not None:
+            on_before_flush()
+        flush_remote_writes(connection)
+        if on_before_verify is not None:
+            on_before_verify(True)
+        _verify_deployed_payload(
+            callbacks,
+            connection,
+            payload_home,
+            wait_seconds=plan.apple_mount_wait_seconds,
+            post_sync=True,
+            verify_payload_home=verify_payload_home,
+            on_verified=on_verified,
+            dependencies=dependencies,
+        )
+    except BaseException as error:
+        if isinstance(transaction, DeploymentTransaction):
+            try:
+                transaction.rollback_after_error(error)
+            finally:
+                transaction.release()
+        raise
+    return transaction
 
 
 def _run_activation_actions_and_verify(
@@ -966,6 +982,46 @@ def complete_deployment_after_upload(
     prepared_plan: PreparedDeployPlan,
     *,
     no_wait: bool,
+    transaction: DeploymentTransaction | None = None,
+    callbacks: OperationCallbacks | None = None,
+    messages: DeployCompletionMessages | None = None,
+    run_remote_actions_func=None,
+    request_reboot_func=None,
+    request_reboot_and_wait_func=None,
+    decide_post_reboot_activation=None,
+    verify_runtime_func=None,
+    dependencies: DeployServiceDependencies | None = None,
+) -> DeployCompletionResult:
+    try:
+        try:
+            result = _complete_deployment_after_upload(
+                connection, prepared_plan, no_wait=no_wait, callbacks=callbacks, messages=messages,
+                run_remote_actions_func=run_remote_actions_func, request_reboot_func=request_reboot_func,
+                request_reboot_and_wait_func=request_reboot_and_wait_func,
+                decide_post_reboot_activation=decide_post_reboot_activation,
+                verify_runtime_func=verify_runtime_func, dependencies=dependencies,
+                after_reboot=transaction.resume_after_reboot if transaction is not None else None,
+            )
+        except BaseException as error:
+            if transaction is not None:
+                transaction.rollback_after_error(error)
+            raise
+        # Archiving cannot invalidate an already healthy runtime. If it fails,
+        # leave the installed journal in place for the next deployment.
+        if transaction is not None and result.verified:
+            transaction.finalize()
+        return result
+    finally:
+        if transaction is not None:
+            transaction.release()
+
+
+def _complete_deployment_after_upload(
+    connection: SshConnection,
+    prepared_plan: PreparedDeployPlan,
+    *,
+    no_wait: bool,
+    after_reboot: Callable[[], None] | None = None,
     callbacks: OperationCallbacks | None = None,
     messages: DeployCompletionMessages | None = None,
     run_remote_actions_func=None,
@@ -1050,6 +1106,9 @@ def complete_deployment_after_upload(
         reboot_no_down_message=DEPLOY_REBOOT_NO_DOWN_MESSAGE,
         reboot_up_timeout_message=DEPLOY_REBOOT_UP_TIMEOUT_MESSAGE,
     )
+
+    if after_reboot is not None:
+        after_reboot()
 
     if startup_mode == DEPLOY_STARTUP_REBOOT_THEN_ACTIVATE:
         wait_for_boot_settle(callbacks)

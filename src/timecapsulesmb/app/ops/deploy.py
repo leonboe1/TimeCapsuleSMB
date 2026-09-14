@@ -375,7 +375,7 @@ def deploy_operation(params: dict[str, object], context: AppOperationContext) ->
         context.log(verification.detail)
 
     try:
-        upload_and_verify_deployment_payload(
+        transaction = upload_and_verify_deployment_payload(
             config,
             connection=connection,
             prepared_plan=prepared_plan,
@@ -411,6 +411,7 @@ def deploy_operation(params: dict[str, object], context: AppOperationContext) ->
             connection,
             prepared_plan,
             no_wait=no_wait,
+            transaction=transaction,
             callbacks=context.to_operation_callbacks(),
             messages=DeployCompletionMessages(),
             verify_runtime_func=_verify_runtime_for_service,

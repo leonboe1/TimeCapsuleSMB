@@ -76,7 +76,7 @@ If macOS still cannot reuse the backup, make sure the backup is not mounted, the
 
 #### Do I need to `uninstall` before updating?
 
-No. You can safely run `deploy` over an old deployment. This is the quickest way to update to a new version.
+No. Run `deploy` over the existing installation. It stages and verifies all replacements, retains previous program files for recovery, and preserves the persistent metadata database in place. Keep an independent copy of irreplaceable backups before changing the runtime.
 
 ## Troubleshooting
 
@@ -85,7 +85,7 @@ No. You can safely run `deploy` over an old deployment. This is the quickest way
 1. Reboot the device
 2. Do a fresh `deploy` on top of the (maybe corrupt) old deploy
 
-A reboot and clean deploy will fix 90% of issues. This is especially useful for old Gen 1-4 devices, because their firmware usually does not provide remote `scp`, so uploads use a slower SSH fallback. The deploy flow verifies uploaded file sizes, but rerunning `deploy` is still the simplest way to replace any interrupted upload.
+Rerunning `deploy` recovers interrupted program replacement, then stages a complete new version. Both SCP and the SSH fallback use SHA-256 readback verification. Recovery leaves managed boot disabled until a complete deployment succeeds; it does not automatically run an old installation. A forcibly terminated client can leave a RAM lock: ensure that client has stopped, reboot the device to clear it, then rerun deploy. See the README's recovery instructions; neither redeploying nor rebooting repairs lost backups or damaged filesystem metadata.
 
 #### Time Machine backups are broken on macOS?
 

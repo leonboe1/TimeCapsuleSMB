@@ -76,6 +76,11 @@ MANAGED_PAYLOAD_FILES = (
     "rsync", "rsyncd.conf", "telemetry", "smb.conf.template",
     "sbin/smbd", "sbin/mdns-advertiser", "sbin/nbns-advertiser",
     "sbin/service", "sbin/rsync", "sbin/telemetry",
+    ".smbd.deploy-new", ".mdns-advertiser.deploy-new", ".nbns-advertiser.deploy-new", ".service.deploy-new",
+    # Recovery snapshots contain only the eleven planned program/config files.
+    *(f"{root}/{kind}/{index}" for root in (".deploy-transaction", ".deploy-previous")
+      for kind in ("old", "new") for index in range(11)),
+    *(f"{root}/{name}" for root in (".deploy-transaction", ".deploy-previous") for name in ("journal.json", "journal.tmp")),
 )
 
 
@@ -160,8 +165,14 @@ def render_remote_action(action: RemoteAction) -> str:
             raise ValueError(f"Refusing unsafe payload removal path: {action.path}")
         # Refuse symlink ancestors; never traverse into another directory.
         guards = [f"[ ! -L {shlex.quote(str(parent))} ]" for parent in (path, *path.parents)]
-        guards.append(f"[ ! -L {shlex.quote(str(path / 'sbin'))} ]")
+        for parent in sorted({parent for name in MANAGED_PAYLOAD_FILES for parent in PurePosixPath(name).parents if str(parent) != "."}):
+            guards.append(f"[ ! -L {shlex.quote(str(path / parent))} ]")
         commands = [f"rm -f {shlex.quote(str(path / name))}" for name in MANAGED_PAYLOAD_FILES]
+        for root in (".deploy-transaction", ".deploy-previous"):
+            for directory in (f"{root}/new", f"{root}/old", root):
+                # Empty snapshot directories must not block a later reinstall.
+                # Unknown contents are retained instead of recursively removed.
+                commands.append(f"(rmdir {shlex.quote(str(path / directory))} 2>/dev/null || true)")
         return " && ".join([*guards, *commands])
     if isinstance(action, RunScriptAction):
         return f"/bin/sh {shlex.quote(action.path)}"

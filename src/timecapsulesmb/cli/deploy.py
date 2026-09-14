@@ -309,7 +309,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             command_context.set_stage(stage)
 
         try:
-            upload_and_verify_deployment_payload(
+            transaction = upload_and_verify_deployment_payload(
                 config,
                 connection=connection,
                 prepared_plan=prepared_plan,
@@ -366,8 +366,12 @@ def main(argv: Optional[list[str]] = None) -> int:
                 allow_prompt=not no_input_enabled(args),
             )
             if proceed is None:
+                if transaction is not None:
+                    transaction.release()
                 return 1
             if not proceed:
+                if transaction is not None:
+                    transaction.release()
                 print("Deployment complete without reboot.", flush=True)
                 command_context.cancel_with_error("Cancelled by user at reboot confirmation prompt.")
                 return 0
@@ -377,6 +381,7 @@ def main(argv: Optional[list[str]] = None) -> int:
                 connection,
                 prepared_plan,
                 no_wait=no_wait,
+                transaction=transaction,
                 callbacks=command_context.to_operation_callbacks(),
                 messages=DeployCompletionMessages(
                     netbsd4_heading="Waiting for NetBSD 4 device activation, this can take a few minutes for Samba to start up...",

@@ -5,8 +5,8 @@ from pathlib import Path, PurePosixPath
 from typing import Callable, Iterable, Mapping
 
 from timecapsulesmb.deploy.commands import RemoteAction, render_remote_actions
-from timecapsulesmb.deploy.planner import FLASH_TEXT_UPLOAD_TIMEOUT_SECONDS, DeploymentPlan, FileTransfer, UninstallPlan
-from timecapsulesmb.device.storage import ensure_volume_root_mounted_conn
+from timecapsulesmb.deploy.planner import DeploymentPlan, FileTransfer, UninstallPlan
+from timecapsulesmb.deploy.transaction import DeploymentTransaction, deploy_transaction
 from timecapsulesmb.transport.ssh import SshConnection, run_scp, run_ssh
 
 
@@ -29,14 +29,6 @@ FLUSH_REMOTE_FILESYSTEMS_TIMEOUT_SECONDS = 300
 def _flash_upload_tmp_path(destination: str) -> str:
     path = PurePosixPath(destination)
     return str(path.with_name(f".{path.name}.tmp"))
-
-
-def _cleanup_flash_upload_tmp_paths(connection: SshConnection, destinations: Iterable[str]) -> None:
-    tmp_paths = tuple(dict.fromkeys(_flash_upload_tmp_path(destination) for destination in destinations))
-    if not tmp_paths:
-        return
-    quoted_paths = " ".join(shlex.quote(path) for path in tmp_paths)
-    run_ssh(connection, f"/bin/sh -c {shlex.quote(f'rm -f {quoted_paths}')}")
 
 
 def _best_effort_cleanup_flash_upload_tmp_path(connection: SshConnection, tmp_destination: str) -> None:
@@ -74,39 +66,6 @@ def upload_flash_file(
         raise
 
 
-def _resolve_transfer_source(source_resolver: Mapping[str, Path], transfer: FileTransfer) -> Path:
-    try:
-        return source_resolver[transfer.source_id]
-    except KeyError as e:
-        raise KeyError(f"No local source for planned transfer {transfer.source_id!r}") from e
-
-
-def _scp_transfer(connection: SshConnection, source: Path, transfer: FileTransfer) -> None:
-    if transfer.timeout_seconds is None:
-        run_scp(connection, source, transfer.destination)
-        return
-    run_scp(connection, source, transfer.destination, timeout=transfer.timeout_seconds)
-
-
-def _destination_is_under(path: str, root: str) -> bool:
-    normalized_path = path.rstrip("/")
-    normalized_root = root.rstrip("/")
-    return normalized_path == normalized_root or normalized_path.startswith(f"{normalized_root}/")
-
-
-def _ensure_payload_volume_before_transfer(connection: SshConnection, plan: DeploymentPlan, transfer: FileTransfer) -> None:
-    if not _destination_is_under(transfer.destination, plan.payload_dir):
-        return
-    if ensure_volume_root_mounted_conn(
-        connection,
-        plan.volume_root,
-        plan.device_path,
-        wait_seconds=plan.apple_mount_wait_seconds,
-    ):
-        return
-    raise RuntimeError(f"payload volume {plan.volume_root} is not mounted before upload to {transfer.destination}")
-
-
 def upload_deployment_payload(
     plan: DeploymentPlan,
     *,
@@ -114,35 +73,15 @@ def upload_deployment_payload(
     source_resolver: Mapping[str, Path],
     on_uploading: Callable[[FileTransfer], None] | None = None,
     on_uploaded: Callable[[FileTransfer], None] | None = None,
-) -> None:
-    planned_modes = {permission.path: permission.mode for permission in plan.permissions}
-    flash_tmp_paths_cleaned = False
-    for transfer in plan.uploads:
-        source = _resolve_transfer_source(source_resolver, transfer)
-        if on_uploading is not None:
-            on_uploading(transfer)
-        _ensure_payload_volume_before_transfer(connection, plan, transfer)
-        if transfer.mode in {"scp", "generated"}:
-            _scp_transfer(connection, source, transfer)
-        elif transfer.mode == "flash_atomic":
-            if not flash_tmp_paths_cleaned:
-                _cleanup_flash_upload_tmp_paths(
-                    connection,
-                    (planned.destination for planned in plan.uploads if planned.mode == "flash_atomic"),
-                )
-                flash_tmp_paths_cleaned = True
-            timeout = transfer.timeout_seconds if transfer.timeout_seconds is not None else FLASH_TEXT_UPLOAD_TIMEOUT_SECONDS
-            upload_flash_file(
-                connection,
-                source,
-                transfer.destination,
-                timeout=timeout,
-                mode=planned_modes.get(transfer.destination, "755"),
-            )
-        else:
-            raise ValueError(f"Unsupported deployment upload mode {transfer.mode!r} for {transfer.source_id!r}")
-        if on_uploaded is not None:
-            on_uploaded(transfer)
+    before_commit: Callable[[], None] | None = None,
+    on_recovery: Callable[[str], None] | None = None,
+) -> DeploymentTransaction:
+    return deploy_transaction(
+        plan, connection=connection, source_resolver=source_resolver,
+        on_uploading=on_uploading, on_uploaded=on_uploaded,
+        on_recovery=on_recovery,
+        before_commit=before_commit or (lambda: run_remote_actions(connection, plan.pre_upload_actions)),
+    )
 
 
 def run_remote_actions(
