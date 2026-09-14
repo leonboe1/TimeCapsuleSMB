@@ -93,15 +93,10 @@ def host(work: Path, jobs: int, sanitizers: bool) -> None:
     # --work must be a new directory. This command never resets a user's tree.
     work.mkdir(parents=True, exist_ok=False)
     source = work / "source"
-    config = str(ROOT / "build/env.sh")
-    # Use the build's source pin, including deliberate environment overrides.
-    # Loading only defaults keeps host tests independent of device credentials.
-    url, ref = subprocess.check_output(
-        ["sh", "-c", '. "$1"; printf "%s\\n%s\\n" "$SAMBA4X_GIT_URL" "$SAMBA4X_GIT_REF"',
-         config, config], env=dict(os.environ, TC_ENV_FILE="/dev/null"), text=True,
-    ).splitlines()
-    subprocess.run(["git", "clone", "--depth", "1", "--branch", ref,
-                    url, str(source)], check=True)
+    subprocess.run(
+        ["sh", "-c", '. "$1"; tc_checkout_pinned_source "$2" https://github.com/samba-team/samba.git "$TC_SAMBA4X_COMMIT"',
+         "sh", str(ROOT / "build/_source_lock.sh"), str(source)], check=True,
+    )
     subprocess.run(["sh", "-c", '. "$1"; patch_apply_series Samba "$2" "$3"', "sh",
                     str(ROOT / "build/_patch_helpers.sh"),
                     str(ROOT / "build/patches/samba4x/series"), str(source)], check=True)
