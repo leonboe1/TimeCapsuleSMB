@@ -732,10 +732,13 @@ final class DashboardStoreTests: LocalizedTestCase {
         let session = dashboard.session(for: profile)
 
         session.runInstallPlan(profile: profile)
-        try await waitUntilStoreState { session.deployStore.state == .planReady }
+        try await waitUntilStoreState {
+            session.deployStore.state == .planReady && !session.deployStore.isBusy
+        }
         session.runInstall(profile: profile)
         try await waitUntilStoreState {
             session.deployStore.state == .deployFailed
+                && !session.deployStore.isBusy
                 && fixture.registry.profile(id: profile.id)?.runtimeState?.state == .installFailed
         }
         let failed = try XCTUnwrap(fixture.registry.profile(id: profile.id))
