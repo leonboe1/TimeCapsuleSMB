@@ -341,7 +341,7 @@ def test_create_app_icon_reuses_cached_icns(monkeypatch: pytest.MonkeyPatch, tmp
     assert (second_resources / "TimeCapsuleSMB.icns").read_text(encoding="utf-8") == "icns"
 
 
-def test_prepared_python_framework_reuses_cache(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_prepared_python_framework_reextracts_modified_cache(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     package_app = load_package_app_module()
     monkeypatch.setattr(package_app, "PACKAGE_ROOT", tmp_path)
     calls: list[Path] = []
@@ -373,10 +373,12 @@ def test_prepared_python_framework_reuses_cache(monkeypatch: pytest.MonkeyPatch,
 
     args = SimpleNamespace()
     first = package_app.prepared_python_framework(args, ("arm64", "x86_64"))
+    (first / "unapproved.py").write_text("# injected cached code")
     second = package_app.prepared_python_framework(args, ("arm64", "x86_64"))
 
     assert first == second
-    assert len(calls) == 1
+    assert not (second / "unapproved.py").exists()
+    assert len(calls) == 2
     assert (second / "Versions" / "Current" / "bin" / "python3").is_file()
 
 
@@ -486,7 +488,7 @@ def test_assert_no_appledouble_files_reports_nested_sidecars(tmp_path: Path) -> 
         package_app.assert_no_appledouble_files(tmp_path / "TimeCapsuleSMB.app")
 
 
-def test_create_python_packages_reuses_cache(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_create_python_packages_always_builds_fresh(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     package_app = load_package_app_module()
     cache_entry = tmp_path / "cache" / "site"
     calls: list[Path] = []
@@ -507,15 +509,15 @@ def test_create_python_packages_reuses_cache(monkeypatch: pytest.MonkeyPatch, tm
     package_app.create_python_packages("python3", first_resources, ("arm64",))
     package_app.create_python_packages("python3", second_resources, ("arm64",))
 
-    assert len(calls) == 1
+    assert len(calls) == 2
     assert (first_resources / "Python" / "site-packages" / "timecapsulesmb" / "__init__.py").is_file()
     assert (second_resources / "Python" / "site-packages" / "timecapsulesmb" / "__init__.py").is_file()
     assert_no_python_bytecode(first_resources / "Python" / "site-packages")
     assert_no_python_bytecode(second_resources / "Python" / "site-packages")
-    assert_no_python_bytecode(cache_entry / "site-packages")
+    assert not cache_entry.exists()
 
 
-def test_create_python_packages_cleans_bytecode_from_existing_cache(
+def test_create_python_packages_ignores_unapproved_cache(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -528,13 +530,19 @@ def test_create_python_packages_cleans_bytecode_from_existing_cache(
     create_python_bytecode(cached_site_packages)
     (cache_entry / ".complete").write_text("ok\n", encoding="utf-8")
     monkeypatch.setattr(package_app, "python_site_packages_cache_entry", lambda python, architectures: cache_entry)
-    monkeypatch.setattr(package_app, "build_python_packages", lambda python, site_packages: pytest.fail("cache was not reused"))
+    (cached_site_packages / "unapproved.pth").write_text("# unexpected startup hook")
+    def fresh_build(python, site_packages):
+        package = site_packages / "timecapsulesmb"
+        package.mkdir()
+        (package / "__init__.py").write_text("# verified fresh package")
+    monkeypatch.setattr(package_app, "build_python_packages", fresh_build)
 
     resources = tmp_path / "Resources"
     package_app.create_python_packages("python3", resources, ("arm64",))
 
     assert (resources / "Python" / "site-packages" / "timecapsulesmb" / "__init__.py").is_file()
     assert_no_python_bytecode(resources / "Python" / "site-packages")
+    assert not (resources / "Python" / "site-packages" / "unapproved.pth").exists()
 
 
 def test_finalize_python_bundle_cleans_before_resigning(
@@ -1517,3 +1525,11 @@ def test_python_build_environment_drops_inherited_code_and_package_sources(monke
         monkeypatch.setenv(name, "/unapproved")
     env = module.python_subprocess_env()
     assert not any(name in env for name in ("PYTHONPATH", "PYTHONHOME", "DYLD_INSERT_LIBRARIES", "PIP_INDEX_URL", "PIP_EXTRA_INDEX_URL"))
+
+
+@pytest.mark.parametrize("no_cache", [False, True])
+def test_runtime_rejects_unapproved_framework_override(tmp_path, no_cache):
+    module = load_package_app_module()
+    args = SimpleNamespace(python_runtime_framework=tmp_path, no_cache=no_cache)
+    with pytest.raises(RuntimeError, match="overrides are disabled"):
+        module.copy_python_runtime(args, tmp_path / "Resources", ("arm64",))

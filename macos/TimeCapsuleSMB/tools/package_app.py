@@ -492,15 +492,7 @@ def python_framework_dylib(framework: Path) -> Path:
 
 def python_runtime_source(args: argparse.Namespace) -> tuple[str, Path, dict[str, object]]:
     if args.python_runtime_framework:
-        source = args.python_runtime_framework.resolve()
-        return (
-            "framework",
-            source,
-            {
-                "source": str(source),
-                "tree_sha256": sha256_tree(source),
-            },
-        )
+        raise RuntimeError("Unverified Python.framework overrides are disabled; supply the pinned python.org installer")
     source = python_runtime_pkg(args)
     return (
         "pkg",
@@ -526,9 +518,8 @@ def prepared_python_framework(args: argparse.Namespace, architectures: tuple[str
     entry = cache_root / key
     framework = entry / PYTHON_FRAMEWORK_NAME
 
-    if cache_is_complete(entry, framework / "Versions" / "Current" / "bin" / "python3"):
-        print("Using cached Python.framework.", file=sys.stderr)
-        return framework
+    # Never reuse executable cache outputs: a marker or adjacent mutable hash
+    # cannot authenticate an extracted runtime. Always derive it from the package.
 
     with tempfile.TemporaryDirectory(prefix=f"{key}.tmp-", dir=cache_root) as tmp:
         staging = Path(tmp) / "entry"
@@ -571,6 +562,8 @@ def extract_python_framework(pkg_path: Path, destination: Path) -> Path:
 
 
 def copy_python_runtime(args: argparse.Namespace, resources_dir: Path, architectures: tuple[str, ...]) -> Path:
+    if args.python_runtime_framework:
+        raise RuntimeError("Unverified Python.framework overrides are disabled; supply the pinned python.org installer")
     runtime_dir = resources_dir / "Python" / "Runtime"
     if runtime_dir.exists():
         shutil.rmtree(runtime_dir)
@@ -832,33 +825,7 @@ def create_python_packages(
         shutil.rmtree(site_packages)
     python_root.mkdir(parents=True, exist_ok=True)
 
-    if use_cache:
-        entry = python_site_packages_cache_entry(python, architectures)
-        cached_site_packages = entry / "site-packages"
-        if cache_is_complete(entry, cached_site_packages):
-            print("Using cached Python site-packages.", file=sys.stderr)
-            shutil.copytree(cached_site_packages, site_packages)
-            remove_python_bytecode(site_packages)
-            return
-
-        cache_root = entry.parent
-        cache_root.mkdir(parents=True, exist_ok=True)
-        with tempfile.TemporaryDirectory(prefix=f"{entry.name}.tmp-", dir=cache_root) as tmp:
-            staging = Path(tmp) / "entry"
-            staged_site_packages = staging / "site-packages"
-            staged_site_packages.mkdir(parents=True)
-            build_python_packages(python, staged_site_packages)
-            remove_python_bytecode(staged_site_packages)
-            remove_appledouble_files(staged_site_packages)
-            assert_macho_architectures_for_roots([staged_site_packages], architectures, "Bundled Python package architecture")
-            assert_no_external_macho_dependencies_for_roots([staged_site_packages])
-            ad_hoc_codesign_site_packages(staged_site_packages)
-            assert_macho_code_signatures_valid_for_roots([staged_site_packages])
-            mark_cache_complete(staging)
-            replace_path(staging, entry)
-        shutil.copytree(cached_site_packages, site_packages)
-        return
-
+    # Only hash-verified download archives may be reused, never installed code.
     site_packages.mkdir()
     build_python_packages(python, site_packages)
     remove_python_bytecode(site_packages)
@@ -2013,7 +1980,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--python-runtime-framework",
         type=Path,
         default=Path(os.environ["TCAPSULE_PACKAGE_PYTHON_FRAMEWORK"]) if os.getenv("TCAPSULE_PACKAGE_PYTHON_FRAMEWORK") else None,
-        help="Existing universal Python.framework to copy into the app bundle.",
+        help="Deprecated: unverified framework overrides are rejected. Use the pinned installer.",
     )
     parser.add_argument(
         "--python-runtime-pkg",
@@ -2027,7 +1994,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="Universal python.org macOS installer URL used when no local runtime source is provided.",
     )
     parser.add_argument("--skip-smoke", action="store_true", help="Skip bundled helper capabilities and validate-install smoke tests.")
-    parser.add_argument("--no-cache", action="store_true", help="Rebuild package-only cached artifacts instead of reusing them.")
+    parser.add_argument("--no-cache", action="store_true", help="Also rebuild non-executable assets; executable dependency layers are always rebuilt.")
     parser.add_argument("--full-validation", action="store_true", help="Run the full Mach-O dependency and signature validation pass even for trusted cached layers.")
     parser.add_argument(
         "--codesign-identity",
