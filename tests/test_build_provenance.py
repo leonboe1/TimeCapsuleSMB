@@ -17,6 +17,17 @@ def test_static_arm_records_real_payload():
     assert record["bytes"] == path.stat().st_size
 
 
+def test_linked_archive_records_include_sdk_runtime_inputs(tmp_path):
+    library = tmp_path / "libc.a"
+    library.write_bytes(b"SDK runtime fixture")
+    link_map = tmp_path / "smbd-link.map"
+    link_map.write_text(f"{library}(exit.o)\nLOAD {library}\n")
+    assert PROVENANCE.linked_archive_records(link_map) == {str(library): PROVENANCE.digest(library)}
+    library.unlink()
+    with pytest.raises(FileNotFoundError):
+        PROVENANCE.linked_archive_records(link_map)
+
+
 @pytest.mark.parametrize("change", ["endian", "dynamic", "interpreter", "telemetry"])
 def test_provenance_rejects_wrong_or_unsafe_payloads(tmp_path, change):
     data = bytearray((ROOT / "bin/mdns/mdns-advertiser").read_bytes())

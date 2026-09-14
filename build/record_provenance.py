@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import platform
+import re
 import struct
 import subprocess
 
@@ -51,6 +52,13 @@ def static_arm_record(path, lane):
     return {"sha256": digest(path), "bytes": len(data), "format": "static ELF32 ARM", "lane": lane}
 
 
+def linked_archive_records(link_map):
+    paths = sorted(set(re.findall(r"(/[^\s()]+\.a)\b", link_map.read_text())))
+    if not paths:
+        raise ValueError("Link map must identify static library inputs")
+    return {name: digest(Path(name)) for name in paths}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", required=True, type=Path)
@@ -84,6 +92,7 @@ def main():
         "static_dependency_sha256": {p.name: digest(p) for p in sorted((args.samba_build / "deps/lib").glob("*.a"))},
         "source_archive_sha256": {p.name: digest(p) for p in sorted((args.samba_build / "distfiles").glob("*")) if p.is_file()},
         "link_map_sha256": digest(link_map),
+        "linked_archive_sha256": linked_archive_records(link_map),
         "artifacts": artifacts,
         "device_tests_performed": False,
     }
