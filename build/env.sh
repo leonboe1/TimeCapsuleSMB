@@ -532,7 +532,7 @@ if [ ! -f "$TC_PASSWORD_FILE" ] && [ -n "$TC_PASSWORD" ]; then
 fi
 
 tc_ssh() {
-    base_ssh_opts="-o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 -o NumberOfPasswordPrompts=1"
+    base_ssh_opts="-o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts -o GlobalKnownHostsFile=/dev/null -o KnownHostsCommand=none -o VerifyHostKeyDNS=no -o UpdateHostKeys=no -o ConnectTimeout=20 -o ServerAliveInterval=10 -o ServerAliveCountMax=2 -o NumberOfPasswordPrompts=1"
     if [ -n "${TC_PASSWORD_FILE:-}" ] && [ -f "$TC_PASSWORD_FILE" ]; then
         SSHPASS=$(cat "$TC_PASSWORD_FILE")
         export SSHPASS
@@ -551,20 +551,21 @@ tc_ssh() {
 }
 
 tc_scp() {
+    base_ssh_opts="-o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts -o GlobalKnownHostsFile=/dev/null -o KnownHostsCommand=none -o VerifyHostKeyDNS=no -o UpdateHostKeys=no"
     if [ -n "${TC_PASSWORD_FILE:-}" ] && [ -f "$TC_PASSWORD_FILE" ]; then
         SSHPASS=$(cat "$TC_PASSWORD_FILE")
         export SSHPASS
         if [ -n "$TC_SSH_PROXYCOMMAND" ]; then
-            sshpass -e scp -O $TC_SSH_OPTS -o "ProxyCommand=$TC_SSH_PROXYCOMMAND" "$@"
+            sshpass -e scp -O $base_ssh_opts $TC_SSH_OPTS -o "ProxyCommand=$TC_SSH_PROXYCOMMAND" "$@"
         else
-            sshpass -e scp -O $TC_SSH_OPTS "$@"
+            sshpass -e scp -O $base_ssh_opts $TC_SSH_OPTS "$@"
         fi
         return
     fi
     if [ -n "$TC_SSH_PROXYCOMMAND" ]; then
-        scp -O $TC_SSH_OPTS -o "ProxyCommand=$TC_SSH_PROXYCOMMAND" "$@"
+        scp -O $base_ssh_opts $TC_SSH_OPTS -o "ProxyCommand=$TC_SSH_PROXYCOMMAND" "$@"
     else
-        scp -O $TC_SSH_OPTS "$@"
+        scp -O $base_ssh_opts $TC_SSH_OPTS "$@"
     fi
 }
 
