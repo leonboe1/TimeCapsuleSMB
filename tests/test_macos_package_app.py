@@ -1020,7 +1020,7 @@ def test_package_app_signs_final_bundle_after_native_tools(
         zip_output=None,
     )
 
-    result = package_app.package_app(args)
+    result = package_app.assemble_app(args)
 
     assert calls[-6:] == ["native", "clean", "assert-clean", "app-sign", "app-verify", "assert"]
     assert result.app == tmp_path / "dist" / "TimeCapsuleSMB.app"
@@ -1079,7 +1079,7 @@ def test_package_app_result_includes_zip_and_notarization_archive(
         zip_output=None,
     )
 
-    result = package_app.package_app(args)
+    result = package_app.assemble_app(args)
 
     assert result.app == tmp_path / "dist" / "TimeCapsuleSMB.app"
     assert result.notarization_archive == tmp_path / "dist" / "TimeCapsuleSMB-notary.zip"
@@ -1312,3 +1312,45 @@ def test_provenance_records_final_files_links_and_zip(tmp_path):
     assert receipt["zip"]["sha256"] == hashlib.sha256(zipped.read_bytes()).hexdigest()
     assert receipt["python"]["version"] == "3.13.15"
     assert receipt["build_pip"]["version"] == "26.2.1"
+
+
+def test_package_publishes_app_zip_and_receipt_only_after_assembly(monkeypatch, tmp_path):
+    module = load_package_app_module()
+    output = tmp_path / "output"
+    def assemble(args):
+        assert not args.output.is_relative_to(output)
+        app = args.output / "TimeCapsuleSMB.app"
+        app.mkdir()
+        (app / "binary").write_bytes(b"verified program")
+        (app / "link").symlink_to("binary")
+        zipped = args.output / "TimeCapsuleSMB.app.zip"
+        zipped.write_bytes(b"verified zip")
+        (args.output / "TimeCapsuleSMB-provenance.json").write_text("{}")
+        return module.PackageResult(app=app, zip_path=zipped)
+    monkeypatch.setattr(module, "assemble_app", assemble)
+    result = module.package_app(SimpleNamespace(output=output))
+    assert (result.app / "link").read_bytes() == b"verified program"
+    assert result.zip_path.read_bytes() == b"verified zip"
+    assert (output / "TimeCapsuleSMB-provenance.json").is_file()
+
+
+def test_failed_assembly_preserves_previous_app(monkeypatch, tmp_path):
+    module = load_package_app_module()
+    app = tmp_path / "TimeCapsuleSMB.app"
+    app.mkdir()
+    (app / "binary").write_bytes(b"previous verified program")
+    def fail(args):
+        raise RuntimeError("validation failed")
+    monkeypatch.setattr(module, "assemble_app", fail)
+    with pytest.raises(RuntimeError, match="validation failed"):
+        module.package_app(SimpleNamespace(output=tmp_path))
+    assert (app / "binary").read_bytes() == b"previous verified program"
+
+
+def test_runtime_loader_reference_normalizes_directory_aliases(tmp_path):
+    module = load_package_app_module()
+    real = tmp_path / "real"
+    (real / "bin").mkdir(parents=True)
+    alias = tmp_path / "alias"
+    alias.symlink_to(real, target_is_directory=True)
+    assert module.loader_relative_reference(alias / "bin/python3", real / "Python") == "@loader_path/../Python"

@@ -437,8 +437,9 @@ def prepared_python_framework(args: argparse.Namespace, architectures: tuple[str
     # Never reuse executable cache outputs: a marker or adjacent mutable hash
     # cannot authenticate an extracted runtime. Always derive it from the package.
 
-    with tempfile.TemporaryDirectory(prefix=f"{key}.tmp-", dir=cache_root) as tmp:
-        staging = Path(tmp) / "entry"
+    # File providers can recreate Finder metadata under Documents while signing.
+    with tempfile.TemporaryDirectory(prefix=f"{key}.tmp-") as tmp:
+        staging = Path(tmp).resolve() / "entry"
         staging.mkdir()
         staged_framework = staging / PYTHON_FRAMEWORK_NAME
         if source_kind == "framework":
@@ -545,7 +546,7 @@ def framework_version_dir(framework: Path) -> Path:
 
 
 def loader_relative_reference(loader: Path, dependency: Path) -> str:
-    return f"@loader_path/{os.path.relpath(dependency, loader.parent)}"
+    return f"@loader_path/{os.path.relpath(dependency.resolve(), loader.parent.resolve())}"
 
 
 def rewrite_python_framework_install_names(framework: Path) -> None:
@@ -1565,6 +1566,32 @@ def write_package_provenance(app: Path, zip_path: Path | None, architectures: tu
 
 
 def package_app(args: argparse.Namespace) -> PackageResult:
+    output = args.output.resolve()
+    with tempfile.TemporaryDirectory(prefix="timecapsulesmb-package-") as directory:
+        staged_args = argparse.Namespace(**vars(args))
+        staged_args.output = Path(directory).resolve()
+        result = assemble_app(staged_args)
+        output.mkdir(parents=True, exist_ok=True)
+        final_app = output / result.app.name
+        copy_destination = output / f".{APP_NAME}.staging"
+        if copy_destination.exists():
+            shutil.rmtree(copy_destination)
+        shutil.copytree(result.app, copy_destination, symlinks=True)
+        replace_path(copy_destination, final_app)
+        zip_path = result.zip_path
+        if zip_path is not None and zip_path.parent == staged_args.output:
+            shutil.copy2(zip_path, output / zip_path.name)
+            zip_path = output / zip_path.name
+        notarization = result.notarization_archive
+        if notarization is not None:
+            shutil.copy2(notarization, output / notarization.name)
+            notarization = output / notarization.name
+        receipt = staged_args.output / f"{APP_NAME}-provenance.json"
+        shutil.copy2(receipt, output / receipt.name)
+        return PackageResult(app=final_app, zip_path=zip_path, notarization_archive=notarization)
+
+
+def assemble_app(args: argparse.Namespace) -> PackageResult:
     architectures = resolve_architectures(args.arch)
     executable, resource_build_dir = build_swift(args.configuration, architectures)
     helper_executable = build_helper(args.configuration, architectures)
