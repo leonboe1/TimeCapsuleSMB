@@ -18,7 +18,7 @@ The Time Capsule will run its own Samba 4.25.0rc2 server, advertise itself over 
 <img width="478" height="268" alt="image" src="https://github.com/user-attachments/assets/c713a1c6-ff71-43a2-a057-451223a1c0e0" />  
 You get the full Apple experience reproduced: after you install this, you do not have to worry about it again, even if the device IP address changes. It will show up automatically in the Time Machine section in the Settings app, and it will use mDNS/Bonjour so it will work fine even if the IP address is not static and gets changed.
 
-The "Install" or `deploy` script will install files in `/mnt/Flash` on the Time Capsule, plus a `.samba4` folder on the root of the hard drive. The `uninstall` script removes those managed files and can optionally reboot the device afterward.
+The "Install" or `deploy` script installs files in `/mnt/Flash` on the Time Capsule, plus a `.samba4` folder on the root of the hard drive. The `uninstall` script removes managed programs and boot hooks, preserves persistent file metadata, and can optionally reboot the device afterward.
 
 NetBSD 6 devices automatically startup on boot. **Older NetBSD 4 devices may need a manual `activate` after every reboot**, or you can **use this to flash the firmware (to add a boot hook) to allow it to automatically start Samba on reboot**. If you do not flash the boot hook, then Samba will not start automatically on an older Time Capsule!
 
@@ -287,7 +287,7 @@ If you want to preview the uninstall plan without changing the device, use:
 .venv/bin/tcapsule uninstall --dry-run --json
 ```
 
-Uninstall success means the managed payload and boot files are gone after reboot. It does **not** check whether Apple SMB or AFP is enabled afterward. Those services may be on or off depending on the device's own settings. 
+Uninstall removes managed programs and boot files. It retains `.samba4/private`, including `xattr.tdb`, in its original location: this database stores persistent file attributes for your shares and is reused on reinstall. Other data, logs and caches in `.samba4` are also retained. Do not delete that folder as a cleanup step. Uninstall does **not** check whether Apple SMB or AFP is enabled afterward. Those services depend on the device's own settings.
 
 If you want to remove the files without rebooting immediately, use:
 

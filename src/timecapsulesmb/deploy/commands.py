@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import shlex
 from dataclasses import dataclass
+from pathlib import PurePosixPath
 from typing import Union
 
 from timecapsulesmb.device.processes import (
@@ -68,6 +69,21 @@ class RemovePathAction:
     path: str
 
 
+# Only program files belong to uninstall. private/xattr.tdb contains user
+# metadata, and unknown files, logs and caches may be needed for recovery.
+MANAGED_PAYLOAD_FILES = (
+    "smbd", "mdns-advertiser", "nbns-advertiser", "service", "mdns", "nbns",
+    "rsync", "rsyncd.conf", "telemetry", "smb.conf.template",
+    "sbin/smbd", "sbin/mdns-advertiser", "sbin/nbns-advertiser",
+    "sbin/service", "sbin/rsync", "sbin/telemetry",
+)
+
+
+@dataclass(frozen=True)
+class RemovePayloadProgramsAction:
+    path: str
+
+
 @dataclass(frozen=True)
 class RunScriptAction:
     path: str
@@ -82,6 +98,7 @@ RemoteAction = Union[
     StopManagerAction,
     StopTelemetryAction,
     RemovePathAction,
+    RemovePayloadProgramsAction,
     RunScriptAction,
 ]
 
@@ -137,6 +154,15 @@ def render_remote_action(action: RemoteAction) -> str:
         return _render_install_permissions_action(action)
     if isinstance(action, RemovePathAction):
         return _render_remove_path_action(action)
+    if isinstance(action, RemovePayloadProgramsAction):
+        path = PurePosixPath(action.path)
+        if not path.is_absolute() or len(path.parts) < 4 or ".." in path.parts:
+            raise ValueError(f"Refusing unsafe payload removal path: {action.path}")
+        # Refuse symlink ancestors; never traverse into another directory.
+        guards = [f"[ ! -L {shlex.quote(str(parent))} ]" for parent in (path, *path.parents)]
+        guards.append(f"[ ! -L {shlex.quote(str(path / 'sbin'))} ]")
+        commands = [f"rm -f {shlex.quote(str(path / name))}" for name in MANAGED_PAYLOAD_FILES]
+        return " && ".join([*guards, *commands])
     if isinstance(action, RunScriptAction):
         return f"/bin/sh {shlex.quote(action.path)}"
     raise TypeError(f"Unsupported remote action: {action!r}")
@@ -181,6 +207,8 @@ def remote_action_to_jsonable(action: RemoteAction) -> dict[str, object]:
         }
     if isinstance(action, RemovePathAction):
         return {"kind": "remove_path", "args": [action.path]}
+    if isinstance(action, RemovePayloadProgramsAction):
+        return {"kind": "remove_payload_programs", "path": action.path, "preserve": "private and other data"}
     if isinstance(action, RunScriptAction):
         return {"kind": "run_script", "args": [action.path]}
     raise TypeError(f"Unsupported remote action: {action!r}")

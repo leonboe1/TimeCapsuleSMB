@@ -205,6 +205,10 @@ def format_uninstall_plan(plan: UninstallPlan) -> str:
     else:
         lines.append("    none")
     lines.append("")
+    lines.append("Retained metadata directories (reused on reinstall):")
+    for directory in plan.preserved_metadata_dirs:
+        lines.append(f"  {directory}")
+    lines.append("")
     lines.append("Remote actions:")
     for command in render_remote_actions(plan.remote_actions):
         lines.append(f"  {command}")

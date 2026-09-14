@@ -32,6 +32,7 @@ from timecapsulesmb.deploy.commands import (
     RemotePermission,
     RemoteSymlink,
     RemovePathAction,
+    RemovePayloadProgramsAction,
     RunScriptAction,
     StopManagerAction,
     StopProcessAction,
@@ -2911,10 +2912,10 @@ describe_managed_smbd_status "" ""
         self.assertEqual(plan.volume_roots, ["/Volumes/dk2", "/Volumes/dk5"])
         self.assertEqual(plan.payload_dirs, ["/Volumes/dk2/samba4", "/Volumes/dk5/samba4"])
         self.assertEqual(
-            [action for action in plan.remote_actions if action == RemovePathAction("/Volumes/dk2/samba4")],
-            [RemovePathAction("/Volumes/dk2/samba4")],
+            [action for action in plan.remote_actions if action == RemovePayloadProgramsAction("/Volumes/dk2/samba4")],
+            [RemovePayloadProgramsAction("/Volumes/dk2/samba4")],
         )
-        self.assertIn(RemovePathAction("/Volumes/dk5/samba4"), plan.remote_actions)
+        self.assertIn(RemovePayloadProgramsAction("/Volumes/dk5/samba4"), plan.remote_actions)
 
     def test_render_remove_path_refuses_flash_root(self) -> None:
         unsafe_paths = [

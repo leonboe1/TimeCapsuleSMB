@@ -9,6 +9,8 @@ from timecapsulesmb.deploy.commands import (
     InstallPermissionsAction,
     PrepareDirsAction,
     RemovePathAction,
+    RemovePayloadProgramsAction,
+    MANAGED_PAYLOAD_FILES,
     RemoteAction,
     RemotePermission,
     RemoteSymlink,
@@ -101,6 +103,7 @@ class UninstallPlan:
     host: str
     volume_roots: list[str]
     payload_dirs: list[str]
+    preserved_metadata_dirs: list[str]
     flash_targets: dict[str, str]
     verify_absent_targets: list[str]
     remote_actions: list[RemoteAction]
@@ -139,7 +142,7 @@ REBOOT_THEN_ACTIVATION_CHECKS = [
 UNINSTALL_REBOOT_CHECKS = [
     PlannedCheck("ssh_goes_down_after_reboot", "SSH goes down after reboot request"),
     PlannedCheck("ssh_returns_after_reboot", "SSH returns after reboot"),
-    PlannedCheck("managed_files_absent", "managed payload and flash hooks are absent"),
+    PlannedCheck("managed_files_absent", "managed programs and flash hooks are absent; persistent metadata is retained"),
 ]
 
 
@@ -392,7 +395,7 @@ def build_uninstall_plan(
         "tcapsulesmb.conf": "/mnt/Flash/tcapsulesmb.conf",
     }
     verify_absent_targets = [
-        *payload_dirs,
+        *(f"{payload_dir}/{name}" for payload_dir in payload_dirs for name in MANAGED_PAYLOAD_FILES),
         *flash_targets.values(),
         "/mnt/Memory/samba4",
         "/mnt/Memory/debug",
@@ -407,6 +410,7 @@ def build_uninstall_plan(
         host=host,
         volume_roots=volume_roots,
         payload_dirs=payload_dirs,
+        preserved_metadata_dirs=[f"{payload_dir}/private" for payload_dir in payload_dirs],
         flash_targets=flash_targets,
         verify_absent_targets=verify_absent_targets,
         remote_actions=[
@@ -420,7 +424,7 @@ def build_uninstall_plan(
             StopProcessAction("nbns"),
             StopProcessAction("rsync"),
             StopTelemetryAction(cleanup=True),
-            *(RemovePathAction(payload_dir) for payload_dir in payload_dirs),
+            *(RemovePayloadProgramsAction(payload_dir) for payload_dir in payload_dirs),
             RemovePathAction(flash_targets["rc.local"]),
             RemovePathAction(flash_targets["common.sh"]),
             RemovePathAction(flash_targets["boot.sh"]),

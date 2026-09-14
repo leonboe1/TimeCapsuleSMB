@@ -266,7 +266,8 @@ def uninstall_result_payload(
         "rebooted": rebooted,
         "verified": verified,
         "requires_reboot": bool(rebooted or reboot_requested),
-        "summary": "Uninstall completed." if verified else "Uninstall completed without post-reboot verification.",
+        "summary": ("Uninstall completed." if verified else "Uninstall completed without post-reboot verification.")
+        + " Persistent file metadata is retained for reinstall.",
     }
     if reboot_requested is not None:
         payload["reboot_requested"] = reboot_requested

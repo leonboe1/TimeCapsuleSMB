@@ -106,7 +106,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         else:
             print("No mounted HFS volumes found; removing flash hooks and runtime state only.")
         remote_uninstall_payload(connection, plan)
-        print("Removed managed payload, flash hooks, and runtime state.")
+        print("Removed managed programs, flash hooks, and runtime state. Persistent file metadata is retained for reinstall.")
 
         if args.no_reboot:
             print("Skipping reboot.")

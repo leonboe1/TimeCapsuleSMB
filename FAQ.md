@@ -261,7 +261,7 @@ The `deploy` script installs files in:
 
 All other files/folders are stored on ramdisks and will be deleted after a reboot.
 
-The `uninstall` script removes these managed files and optionally reboots the device, which gets rid of all the other files. 
+The `uninstall` script removes managed programs and boot hooks and optionally reboots the device to clear RAM state. It preserves `.samba4/private/xattr.tdb` and the rest of the persistent private directory in place for reinstall, as well as other disk data. The database contains file metadata; deleting it can lose attributes even when the file contents remain intact.
 
 ## Getting Help
 
