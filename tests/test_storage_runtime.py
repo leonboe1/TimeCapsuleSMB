@@ -5209,9 +5209,9 @@ MaSt = (
             service_source = flash.parent / "Memory/samba4/sbin/service"
             (payload / "service").write_text(service_source.read_text() if service_source.exists() else "#!/bin/sh\nexit 0\n")
             (payload / "service").chmod(0o755)
-            (payload / "rsync").write_text("#!/bin/sh\nexit 0\n")
-            (payload / "rsync").chmod(0o755)
-            (payload / "rsyncd.conf").write_text("[shareroot]\n")
+            for helper in ("mdns-advertiser", "nbns-advertiser"):
+                (payload / helper).write_text("#!/bin/sh\nexit 0\n")
+                (payload / helper).chmod(0o755)
             marker = shlex.quote(str(volumes / "dk5/.com.apple.timemachine.supported"))
             with (flash / "tcapsulesmb.conf").open("a") as conf:
                 conf.write("TC_SMB_BIND_INTERFACES='127.0.0.1/8'\n")

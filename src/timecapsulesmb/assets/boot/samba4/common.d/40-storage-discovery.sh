@@ -765,8 +765,9 @@ tc_verify_payload_dir() {
 
     [ -d "$payload_dir" ] || return 1
     [ -x "$payload_dir/smbd" ] || [ -x "$payload_dir/sbin/smbd" ] || return 1
-    [ -x "$payload_dir/rsync" ] || return 1
-    [ -r "$payload_dir/rsyncd.conf" ] || return 1
+    [ -x "$payload_dir/mdns-advertiser" ] || return 1
+    [ -x "$payload_dir/nbns-advertiser" ] || return 1
+    [ -x "$payload_dir/service" ] || return 1
     [ -d "$payload_dir/private" ] || return 1
 }
 
