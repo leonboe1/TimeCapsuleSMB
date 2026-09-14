@@ -244,7 +244,7 @@ class Samba4XBuildScriptTests(unittest.TestCase):
         self.make_file(deps / "lib" / "libhogweed.a")
         self.make_file(deps / ".stamp-libtasn1-4.21.0")
         self.make_file(deps / "lib" / "libtasn1.a")
-        self.make_file(deps / ".stamp-gnutls-3.8.13-system-nettle-oaep-no-thread-local")
+        self.make_file(deps / ".stamp-gnutls-3.8.13-system-nettle-oaep-no-thread-local-audit")
         self.make_file(deps / "lib" / "libgnutls.a")
         self.make_file(deps / "lib" / "pkgconfig" / "gnutls.pc", "Libs: -L${libdir} -lgnutls\n")
 

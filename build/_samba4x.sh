@@ -877,7 +877,7 @@ rewrite_samba4x_gnutls_pc() {
 }
 
 build_samba4x_gnutls() {
-    gnutls_stamp_suffix="system-nettle-oaep-no-thread-local"
+    gnutls_stamp_suffix="system-nettle-oaep-no-thread-local-audit"
     stamp="$SAMBA4X_DEPS/.stamp-gnutls-$SAMBA4X_GNUTLS_VERSION-$gnutls_stamp_suffix"
     if [ -f "$stamp" ] && [ -f "$SAMBA4X_DEPS/lib/libgnutls.a" ]; then
         echo "GnuTLS $SAMBA4X_GNUTLS_VERSION already built."
@@ -903,6 +903,7 @@ build_samba4x_gnutls() {
             --disable-shared \
             --enable-static \
             --disable-doc \
+            --disable-crypto-auditing \
             --disable-tools \
             --disable-tests \
             --disable-cxx \
