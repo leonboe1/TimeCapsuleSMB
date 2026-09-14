@@ -4658,7 +4658,7 @@ class CheckTests(unittest.TestCase):
         self.assertEqual(result.status, "PASS")
         self.assertEqual(
             captured_args,
-            ["smbclient", "-s", "/dev/null", "-g", "-p", "1445", "-I", "127.0.0.1", "-L", "//127.0.0.1", "-U", "admin%pw"],
+            ["smbclient", "-s", "/dev/null", "-g", "-p", "1445", "-I", "127.0.0.1", "-L", "//127.0.0.1", "-U", "admin"],
         )
 
     def test_check_authenticated_smb_listing_can_pin_connect_address(self) -> None:
@@ -4682,7 +4682,7 @@ class CheckTests(unittest.TestCase):
         self.assertEqual(result.details["ip_address"], "192.168.1.217")
         self.assertEqual(
             captured_args,
-            ["smbclient", "-s", "/dev/null", "-g", "-I", "192.168.1.217", "-L", "//server.local", "-U", "admin%pw"],
+            ["smbclient", "-s", "/dev/null", "-g", "-I", "192.168.1.217", "-L", "//server.local", "-U", "admin"],
         )
 
     def test_try_authenticated_smb_listing_forwards_custom_port(self) -> None:

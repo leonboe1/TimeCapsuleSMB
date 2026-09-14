@@ -104,5 +104,6 @@ def run_local_capture(
     timeout: int = 15,
     *,
     env: Mapping[str, str] | None = None,
+    input_text: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env)
+    return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=env, input=input_text)

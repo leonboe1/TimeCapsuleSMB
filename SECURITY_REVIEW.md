@@ -30,6 +30,7 @@ upstream and does not contain this hardening.
 | R7: disabling NBNS prevented Samba from claiming TCP 445 | Stop Apple's `wcifsfs` before every Samba start/recovery independently of NBNS. Tests require successful listener cleanup before starting Samba and fail closed if cleanup fails. |
 | R8: documentation promised factory restoration and recommended deleting metadata | Remove those claims and the full-folder deletion instructions. Explain retained metadata, incomplete reversal of prior settings/file changes, hardware validation limits, and the unresolved upstream settings-reset reports. |
 | R9: deployment released exclusion after uncertain remote failures | Retain the remote lock and journal after transport failures or cancellation across upload, recovery, activation and finalization. Do not automatically roll back while remote work may survive. Recovery requires confirming that all remote work has stopped before clearing the RAM lock. |
+| R10: SMB diagnostics exposed the device password in local process arguments | Pass nonempty passwords through a private stdin pipe using `PASSWD_FD`, with no credential in argv or environment values. Handle empty passwords explicitly and reject values beyond Samba's line/127-byte descriptor limits. Tests exercise real local child processes and timeout cleanup without contacting a device. |
 
 Additional fixes keep updates/downloads on this fork, invalidate caches from other
 update sources, and correct macOS resource-bundle validation. No hardened app release

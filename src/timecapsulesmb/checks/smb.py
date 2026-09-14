@@ -76,6 +76,29 @@ def _smbclient_env() -> dict[str, str]:
     return {key: value for key, value in env.items() if value}
 
 
+def _run_authenticated_smbclient(args: list[str], password: str, *, timeout: int) -> subprocess.CompletedProcess[str]:
+    # cli_credentials_parse_password_fd reads at most 127 bytes and stops at a
+    # newline/NUL. Reject values it would silently truncate.
+    if any(char in password for char in "\r\n\0"):
+        raise ValueError("SMB passwords cannot contain line breaks or NUL characters")
+    if len(password.encode("utf-8")) > 127:
+        raise ValueError("SMB diagnostic passwords cannot exceed smbclient's 127-byte pipe limit")
+    # subprocess.run creates a private stdin pipe and closes it on completion,
+    # timeout or cancellation. Only its descriptor number goes in the environment.
+    env = _smbclient_env()
+    if not password:
+        # Samba rejects an empty PASSWD_FD line; select no-password explicitly.
+        return run_local_capture(args + ["-N"], timeout=timeout, env=env, input_text="")
+    env["PASSWD_FD"] = "0"
+    return run_local_capture(args, timeout=timeout, env=env, input_text=password + "\n")
+
+
+def _smbclient_user_args(username: str) -> list[str]:
+    if any(char in username for char in "%\r\n\0"):
+        raise ValueError("SMB usernames cannot contain password separators, line breaks or NUL characters")
+    return ["-U", username]
+
+
 def _smbclient_text_tail(value: object) -> str | None:
     if value is None:
         return None
@@ -224,7 +247,6 @@ def _redacted_smbclient_command(args: list[str]) -> str:
 def _smbclient_listing_args(
     target: SmbClientTarget,
     username: str,
-    password: str,
     *,
     port: Optional[int] = None,
 ) -> list[str]:
@@ -233,7 +255,7 @@ def _smbclient_listing_args(
         args += ["-p", str(port)]
     if target.ip_address is not None:
         args += ["-I", target.ip_address]
-    return args + ["-L", f"//{target.server}", "-U", f"{username}%{password}"]
+    return args + ["-L", f"//{target.server}"] + _smbclient_user_args(username)
 
 
 def _new_listing_attempt(target: SmbClientTarget, timeout: int, start: float, command: str | None = None) -> dict[str, object]:
@@ -257,12 +279,8 @@ def _run_smbclient_listing(
     port: Optional[int] = None,
     timeout: int,
 ) -> subprocess.CompletedProcess[str]:
-    args = _smbclient_listing_args(target, username, password, port=port)
-    return run_local_capture(
-        args,
-        timeout=timeout,
-        env=_smbclient_env(),
-    )
+    args = _smbclient_listing_args(target, username, port=port)
+    return _run_authenticated_smbclient(args, password, timeout=timeout)
 
 
 def check_authenticated_smb_listing(
@@ -288,7 +306,7 @@ def check_authenticated_smb_listing(
         )
 
     target = _normalize_smb_client_target(server)
-    command = _redacted_smbclient_command(_smbclient_listing_args(target, username, password, port=port))
+    command = _redacted_smbclient_command(_smbclient_listing_args(target, username, port=port))
     try:
         start = time.monotonic()
         proc = _run_smbclient_listing(target, username, password, port=port, timeout=timeout)
@@ -364,7 +382,7 @@ def try_authenticated_smb_listing(
     attempts: list[dict[str, object]] = []
     targets = [_normalize_smb_client_target(server_input) for server_input in servers]
     for target in targets:
-        command = _redacted_smbclient_command(_smbclient_listing_args(target, username, password, port=port))
+        command = _redacted_smbclient_command(_smbclient_listing_args(target, username, port=port))
         try:
             start = time.monotonic()
             proc = _run_smbclient_listing(target, username, password, port=port, timeout=timeout)
@@ -443,10 +461,10 @@ def check_authenticated_smb_file_ops_detailed(
             args += ["-p", str(port)]
         if ip_address is not None:
             args += ["-I", ip_address]
-        return run_local_capture(
-            args + [remote, "-U", f"{username}%{password}", "-c", "; ".join(commands)],
+        return _run_authenticated_smbclient(
+            args + [remote] + _smbclient_user_args(username) + ["-c", "; ".join(commands)],
+            password,
             timeout=timeout,
-            env=_smbclient_env(),
         )
 
     def fail_result(prefix: str, proc: subprocess.CompletedProcess[str]) -> list[CheckResult]:
