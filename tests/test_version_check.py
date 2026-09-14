@@ -93,7 +93,7 @@ class VersionCheckTests(unittest.TestCase):
             self.assertEqual(cache["fetched_at"], 1000.0)
             self.assertEqual(cache["payload"]["min_supported_version"], 20004)
 
-    def test_outdated_client_blocks_with_remote_message_and_download_url(self) -> None:
+    def test_outdated_client_ignores_untrusted_download_url(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             cache_path = Path(tmp) / "version-cache.json"
             download_url = "https://example.invalid/releases/latest"
@@ -117,7 +117,7 @@ class VersionCheckTests(unittest.TestCase):
 
             self.assertTrue(result.should_block)
             self.assertEqual(result.message, message)
-            self.assertEqual(result.download_url, download_url)
+            self.assertEqual(result.download_url, DEFAULT_DOWNLOAD_URL)
             self.assertEqual(result.source, "network")
             self.assertEqual(result.current_version, 20005)
             self.assertEqual(result.min_supported_version, 20005)
@@ -208,6 +208,22 @@ class VersionCheckTests(unittest.TestCase):
             self.assertEqual(result.source, "cache")
             self.assertEqual(result.current_version, 20004)
             self.assertEqual(calls, [])
+
+    def test_cache_from_another_source_or_legacy_cache_is_not_reused(self) -> None:
+        for old_url in (None, "https://raw.githubusercontent.com/jamesyc/TimeCapsuleSMB/main/version.json"):
+            with self.subTest(old_url=old_url), tempfile.TemporaryDirectory() as tmp:
+                cache_path = Path(tmp) / "cache.json"
+                cache_path.write_text(json.dumps({
+                    "fetched_at": 1000.0, "payload": self.metadata(), "url": old_url,
+                }))
+                calls = []
+                result = check_client_version(
+                    cache_path=cache_path, now=1010.0,
+                    opener=self.opener_for_payload(self.metadata(), calls),
+                )
+                self.assertEqual(result.source, "network")
+                self.assertEqual(len(calls), 1)
+                self.assertEqual(json.loads(cache_path.read_text())["url"], VERSION_CHECK_URL)
 
     def test_stale_cache_fetches_remote_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

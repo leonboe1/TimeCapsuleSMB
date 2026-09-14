@@ -1,10 +1,12 @@
 # TimeCapsuleSMB
 
-[![CI](https://github.com/jamesyc/TimeCapsuleSMB/actions/workflows/ci.yml/badge.svg)](https://github.com/jamesyc/TimeCapsuleSMB/actions/workflows/ci.yml)
-[![Latest Release](https://img.shields.io/github/v/release/jamesyc/TimeCapsuleSMB)](https://github.com/jamesyc/TimeCapsuleSMB/releases/latest)
-[![License](https://img.shields.io/github/license/jamesyc/TimeCapsuleSMB)](LICENSE)
+This is a security fork of [James Chang’s TimeCapsuleSMB](https://github.com/jamesyc/TimeCapsuleSMB). Use the `security/harden-fork` branch; upstream release applications do not contain these fixes. See [SECURITY_REVIEW.md](SECURITY_REVIEW.md) for changes and validation limits.
+
+[![CI](https://github.com/leonboe1/TimeCapsuleSMB/actions/workflows/ci.yml/badge.svg)](https://github.com/leonboe1/TimeCapsuleSMB/actions/workflows/ci.yml)
+[![Latest Release](https://img.shields.io/github/v/release/leonboe1/TimeCapsuleSMB)](https://github.com/leonboe1/TimeCapsuleSMB/releases/latest)
+[![License](https://img.shields.io/github/license/leonboe1/TimeCapsuleSMB)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
-[![macOS App](https://img.shields.io/badge/macOS%20app-download-brightgreen)](https://github.com/jamesyc/TimeCapsuleSMB/releases/latest)
+[![macOS App](https://img.shields.io/badge/macOS%20app-download-brightgreen)](https://github.com/leonboe1/TimeCapsuleSMB/releases/latest)
 
 Apple AirPort Time Capsules only support AFP and SMB1 natively. Apple removed AFP support in macOS 27 (and removed SMB1 support from macOS a long time ago). This is a modern Samba setup that runs directly on the Time Capsule itself; macOS 27 can connect to the Time Capsule as a network share, and use it for Time Machine backups. 
 
@@ -24,7 +26,7 @@ The current authentication model accepts any user as the username, and the Samba
 
 AirPort Extreme devices are not officially supported. Unofficially, they work fine. Note that this is installed to the hard drive, so it will not work for an Airport Extreme without a hard drive (as there is not enough space to store the binaries on the flash memory).   
 
-If TimeCapsuleSMB has been useful to you, you can [buy me a coffee](https://buymeacoffee.com/jamesyc) to support the project.
+You can support the original author through [James’s donation page](https://buymeacoffee.com/jamesyc).
 
 ## Requirements
 
@@ -72,8 +74,8 @@ Also, if you are an expert and want to DIY the install, you can copy the binary 
 
 ## Quick Start (macOS app)
 
-1. Download the latest release of the app from here: https://github.com/jamesyc/TimeCapsuleSMB/releases
-2. Unzip the app and run it. If you get a "cannot be opened" warning, you need to manually disable Gatekeeper for this app.
+1. Build the app from this branch using `python3 macos/TimeCapsuleSMB/tools/package_app.py --configuration release --arch native --full-validation`. No hardened release is published yet. Future builds will be listed on [this fork’s releases page](https://github.com/leonboe1/TimeCapsuleSMB/releases).
+2. Open your locally built app. Keep macOS Gatekeeper enabled.
 3. Make sure *Local Network* permissions is granted (System Settings → Privacy & Security → Local Network → make sure TimeCapsuleSMB is allowed, then quit/reopen the app). Close and re-open the app after granting permissions.
 4. Click "Add Device" on the left sidebar, and select your device. 
 5. Enter your device password, and click "Save Device". 
@@ -90,7 +92,7 @@ Also, if you are an expert and want to DIY the install, you can copy the binary 
    <img width="634" height="429" alt="image" src="https://github.com/user-attachments/assets/e35d8934-975b-4079-8087-8c22984a3165" />
 10. (Optional) Wait 5-10 minutes for Samba to fully start up, then go to the Checkup tab and run a Checkup.
 
-Please [read the FAQ](FAQ.md) for more information. If you have an issue that could not be resolved via the FAQ, I would appreciate it if you [file an issue here](https://github.com/jamesyc/TimeCapsuleSMB/issues) for help.
+Please [read the FAQ](FAQ.md) for more information. If you have an issue that could not be resolved via the FAQ, I would appreciate it if you [file an issue here](https://github.com/leonboe1/TimeCapsuleSMB/issues) for help.
 
 ## Quick Start (with python)
 
@@ -114,7 +116,7 @@ If you run into any issues:
 
 Just delete this `TimeCapsuleSMB` folder if you want to remove it from your Mac after you're done setting up the Time Capsule. All the scripts/binaries/etc are stored in the `TimeCapsuleSMB` folder (so if you want to clean up your Mac, then just deleting the folder is fine).
 
-If you find any bugs, I would appreciate it if you [file an issue here](https://github.com/jamesyc/TimeCapsuleSMB/issues) for help.
+If you find any bugs, I would appreciate it if you [file an issue here](https://github.com/leonboe1/TimeCapsuleSMB/issues) for help.
 
 ## Step 1: Prepare Your Host
 

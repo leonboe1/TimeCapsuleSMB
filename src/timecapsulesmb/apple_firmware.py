@@ -17,7 +17,7 @@ from timecapsulesmb.flash import FlashAnalysisError, sha256_hex
 
 APPLE_FIRMWARE_CATALOG_URL = "https://apsu.apple.com/version.xml"
 MAX_FIRMWARE_BYTES = 32 * 1024 * 1024
-FIRMWARE_KEY_ISSUE_URL = "https://github.com/jamesyc/TimeCapsuleSMB/issues"
+FIRMWARE_KEY_ISSUE_URL = "https://github.com/leonboe1/TimeCapsuleSMB/issues"
 UNSUPPORTED_FIRMWARE_KEY_MESSAGE = (
     "We do not have firmware encryption keys for this AirPort firmware product yet. "
     f"Please file an issue at {FIRMWARE_KEY_ISSUE_URL} so the key can be added."

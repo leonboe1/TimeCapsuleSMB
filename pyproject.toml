@@ -48,12 +48,12 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/jamesyc/TimeCapsuleSMB"
-Documentation = "https://github.com/jamesyc/TimeCapsuleSMB#readme"
-FAQ = "https://github.com/jamesyc/TimeCapsuleSMB/blob/main/FAQ.md"
-Issues = "https://github.com/jamesyc/TimeCapsuleSMB/issues"
-Releases = "https://github.com/jamesyc/TimeCapsuleSMB/releases"
-Source = "https://github.com/jamesyc/TimeCapsuleSMB"
+Homepage = "https://github.com/leonboe1/TimeCapsuleSMB"
+Documentation = "https://github.com/leonboe1/TimeCapsuleSMB#readme"
+FAQ = "https://github.com/leonboe1/TimeCapsuleSMB/blob/main/FAQ.md"
+Issues = "https://github.com/leonboe1/TimeCapsuleSMB/issues"
+Releases = "https://github.com/leonboe1/TimeCapsuleSMB/releases"
+Source = "https://github.com/leonboe1/TimeCapsuleSMB"
 
 [project.optional-dependencies]
 dev = [

@@ -11,8 +11,8 @@ from timecapsulesmb.core.paths import package_project_root, resolve_app_paths
 from timecapsulesmb.core.release import CLI_VERSION, CLI_VERSION_CODE
 
 
-VERSION_CHECK_URL = "https://raw.githubusercontent.com/jamesyc/TimeCapsuleSMB/main/version.json"
-DEFAULT_DOWNLOAD_URL = "https://github.com/jamesyc/TimeCapsuleSMB/releases/latest"
+VERSION_CHECK_URL = "https://raw.githubusercontent.com/leonboe1/TimeCapsuleSMB/security/harden-fork/version.json"
+DEFAULT_DOWNLOAD_URL = "https://github.com/leonboe1/TimeCapsuleSMB/releases/latest"
 DEFAULT_UNSUPPORTED_MESSAGE = "This version is no longer supported. Please update before continuing."
 VERSION_CHECK_TIMEOUT_SECONDS = 3.0
 VERSION_CHECK_CACHE_SECONDS = 3 * 60 * 60
@@ -63,9 +63,8 @@ def parse_version_metadata(payload: object) -> VersionMetadata | None:
         return None
     if current_version < min_supported_version:
         return None
-    download_url = payload.get("download_url")
-    if not isinstance(download_url, str) or not download_url.strip():
-        download_url = DEFAULT_DOWNLOAD_URL
+    # Metadata must never send fork users back to an upstream or arbitrary binary.
+    download_url = DEFAULT_DOWNLOAD_URL
     message = payload.get("message")
     if not isinstance(message, str) or not message.strip():
         message = DEFAULT_UNSUPPORTED_MESSAGE
@@ -114,18 +113,19 @@ def load_fresh_cached_payload(
     cache_path: Path = VERSION_CHECK_CACHE_PATH,
     now: float | None = None,
     max_age_seconds: int = VERSION_CHECK_CACHE_SECONDS,
+    url: str = VERSION_CHECK_URL,
 ) -> object | None:
     timestamp = time.time() if now is None else now
     try:
         cache = json.loads(cache_path.read_text())
     except (OSError, json.JSONDecodeError):
         return None
-    if not isinstance(cache, dict):
+    if not isinstance(cache, dict) or cache.get("url") != url:
         return None
     fetched_at = cache.get("fetched_at")
     if not isinstance(fetched_at, (int, float)) or isinstance(fetched_at, bool):
         return None
-    if timestamp - fetched_at > max_age_seconds:
+    if not 0 <= timestamp - fetched_at <= max_age_seconds:
         return None
     return cache.get("payload")
 
@@ -135,11 +135,12 @@ def save_cached_payload(
     *,
     cache_path: Path = VERSION_CHECK_CACHE_PATH,
     now: float | None = None,
+    url: str = VERSION_CHECK_URL,
 ) -> None:
     if not isinstance(payload, dict):
         return
     timestamp = time.time() if now is None else now
-    text = json.dumps({"fetched_at": timestamp, "payload": payload}, sort_keys=True) + "\n"
+    text = json.dumps({"fetched_at": timestamp, "payload": payload, "url": url}, sort_keys=True) + "\n"
     try:
         cache_path.write_text(text)
     except OSError:
@@ -182,7 +183,7 @@ def _check_client_version(
     opener: UrlOpen,
 ) -> VersionCheckResult:
     timestamp = time.time() if now is None else now
-    cached_payload = load_fresh_cached_payload(cache_path=cache_path, now=timestamp)
+    cached_payload = load_fresh_cached_payload(cache_path=cache_path, now=timestamp, url=url)
     cached_metadata = parse_version_metadata(cached_payload)
     if cached_metadata is not None and local_version_code >= cached_metadata.min_supported_version:
         return VersionCheckResult(
@@ -200,7 +201,7 @@ def _check_client_version(
     if fetched_metadata is None:
         return VersionCheckResult(should_block=False, checked_url=url, local_version_code=local_version_code)
 
-    save_cached_payload(fetched_payload, cache_path=cache_path, now=timestamp)
+    save_cached_payload(fetched_payload, cache_path=cache_path, now=timestamp, url=url)
     if local_version_code < fetched_metadata.min_supported_version:
         return VersionCheckResult(
             should_block=True,
