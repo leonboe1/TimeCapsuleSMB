@@ -1493,19 +1493,19 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(rc, 1)
         ensure_venv.assert_not_called()
-        self.assertIn("requires Python 3.9 or newer", stderr.getvalue())
+        self.assertIn("requires Python 3.10 or newer", stderr.getvalue())
         finished = self.telemetry_payload("bootstrap_finished")
         self.assertEqual(finished["result"], "failure")
         self.assertIn("stage=check_python", finished["error"])
 
     def test_bootstrap_accepts_selected_python_at_minimum(self) -> None:
         output = io.StringIO()
-        with mock.patch("timecapsulesmb.cli.bootstrap.detect_selected_python_version", return_value="3.9.0"):
+        with mock.patch("timecapsulesmb.cli.bootstrap.detect_selected_python_version", return_value="3.10.0"):
             with redirect_stdout(output):
-                version = bootstrap.validate_selected_python("/usr/local/bin/python3.9")
+                version = bootstrap.validate_selected_python("/usr/local/bin/python3.10")
 
-        self.assertEqual(version, "3.9.0")
-        self.assertIn("Selected Python: /usr/local/bin/python3.9 (3.9.0)", output.getvalue())
+        self.assertEqual(version, "3.10.0")
+        self.assertIn("Selected Python: /usr/local/bin/python3.10 (3.10.0)", output.getvalue())
 
     def test_bootstrap_blocks_old_macos_missing_tools_before_venv(self) -> None:
         output = io.StringIO()
@@ -1621,9 +1621,9 @@ class CliTests(unittest.TestCase):
             run_mock.call_args_list,
             [
                 mock.call([str(venv_python), "-m", "ensurepip", "--upgrade"]),
-                mock.call([str(venv_python), "-m", "pip", "install", "-U", "pip"]),
-                mock.call([str(venv_python), "-m", "pip", "install", "-r", str(bootstrap.REQUIREMENTS)]),
-                mock.call([str(venv_python), "-m", "pip", "install", "-e", str(bootstrap.REPO_ROOT)]),
+                mock.call([str(venv_python), "-m", "pip", "install", "--require-hashes", "-r", str(bootstrap.REPO_ROOT / "requirements-build.txt")]),
+                mock.call([str(venv_python), "-m", "pip", "install", "--require-hashes", "-r", str(bootstrap.REQUIREMENTS)]),
+                mock.call([str(venv_python), "-m", "pip", "install", "--no-build-isolation", "--no-deps", "-e", str(bootstrap.REPO_ROOT)]),
             ],
         )
 
@@ -1635,7 +1635,7 @@ class CliTests(unittest.TestCase):
 
         commands = [call.args[0] for call in run_mock.call_args_list]
         self.assertNotIn([str(venv_python), "-m", "ensurepip", "--upgrade"], commands)
-        self.assertEqual(commands[0], [str(venv_python), "-m", "pip", "install", "-U", "pip"])
+        self.assertEqual(commands[0], [str(venv_python), "-m", "pip", "install", "--require-hashes", "-r", str(bootstrap.REPO_ROOT / "requirements-build.txt")])
 
     def test_bootstrap_skips_required_host_tools_when_present(self) -> None:
         output = io.StringIO()

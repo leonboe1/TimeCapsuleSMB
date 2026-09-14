@@ -28,7 +28,7 @@ jobs:
           - ubuntu-latest
           - macos-latest
         python-version:
-          - "3.9"
+          - "3.10"
           - "3.12"
           - "3.14"
 
@@ -41,13 +41,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Upgrade pip
-        run: python -m pip install --upgrade pip
-
       - name: Install Python dependencies
         run: |
-          python -m pip install -r requirements.txt
-          python -m pip install -e ".[dev]"
+          python -m pip install --require-hashes -r requirements.txt -r requirements-build.txt -r requirements-dev.txt
+          python -m pip install --no-build-isolation --no-deps -e .
 
       - name: Compile all native helpers
         run: ./build/native/host-check.sh

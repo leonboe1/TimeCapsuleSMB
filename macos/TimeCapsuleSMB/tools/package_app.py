@@ -33,9 +33,10 @@ DEFAULT_ICON_SOURCE = PACKAGE_ROOT / "Assets" / "AppIcon" / "tcs.jpg"
 ARTIFACT_MANIFEST = REPO_ROOT / "src" / "timecapsulesmb" / "assets" / "artifact-manifest.json"
 RESOURCE_BUNDLE_NAME = "TimeCapsuleSMBMac_TimeCapsuleSMBApp.bundle"
 PYTHON_RUNTIME_VERSION = "3.13.13"
+PYTHON_RUNTIME_SHA256 = "a909cb655af5db67d5a90b3603437a1d58bec3446d624e4034e278ac62023cc9"
 PYTHON_RUNTIME_URL = f"https://www.python.org/ftp/python/{PYTHON_RUNTIME_VERSION}/python-{PYTHON_RUNTIME_VERSION}-macos11.pkg"
 PYTHON_FRAMEWORK_NAME = "Python.framework"
-APP_BUNDLED_PYTHON_REQUIREMENTS = ("certifi>=2024.8.30",)
+APP_BUNDLED_PYTHON_REQUIREMENTS = ("certifi==2026.7.22",)
 DEFAULT_ARCHITECTURES = ("arm64", "x86_64")
 CACHE_KEY_VERSION = 1
 PYTHON_RUNTIME_CACHE_VERSION = 2
@@ -460,13 +461,17 @@ def download_file(url: str, destination: Path) -> None:
 
 def python_runtime_pkg(args: argparse.Namespace) -> Path:
     if args.python_runtime_pkg:
-        return args.python_runtime_pkg.resolve()
-    cache_dir = package_cache_dir("python-runtime")
-    filename = Path(args.python_runtime_url).name or f"python-{PYTHON_RUNTIME_VERSION}-macos11.pkg"
-    destination = cache_dir / filename
-    if not destination.is_file():
-        print(f"Downloading bundled Python runtime: {args.python_runtime_url}", file=sys.stderr)
-        download_file(args.python_runtime_url, destination)
+        destination = args.python_runtime_pkg.resolve()
+    else:
+        if args.python_runtime_url != PYTHON_RUNTIME_URL:
+            raise RuntimeError("Python runtime URL is not in the reviewed package manifest")
+        cache_dir = package_cache_dir("python-runtime")
+        destination = cache_dir / f"python-{PYTHON_RUNTIME_VERSION}-macos11.pkg"
+        if not destination.is_file():
+            print(f"Downloading bundled Python runtime: {args.python_runtime_url}", file=sys.stderr)
+            download_file(args.python_runtime_url, destination)
+    if sha256_file(destination) != PYTHON_RUNTIME_SHA256:
+        raise RuntimeError("Python runtime checksum mismatch; refusing to extract cached or downloaded package")
     return destination
 
 
@@ -770,20 +775,20 @@ def python_site_packages_cache_entry(python: str, architectures: tuple[str, ...]
 
 def build_python_packages(python: str, site_packages: Path) -> None:
     major, minor = python_major_minor(python)
-    if (major, minor) < (3, 9):
-        raise RuntimeError(f"TimeCapsuleSMB.app requires Python 3.9 or newer, got {major}.{minor} from {python}")
+    if (major, minor) < (3, 10):
+        raise RuntimeError(f"TimeCapsuleSMB.app requires Python 3.10 or newer, got {major}.{minor} from {python}")
 
     with tempfile.TemporaryDirectory(prefix="timecapsulesmb-package-python-") as tmp:
         build_venv = Path(tmp) / "venv"
         env = python_subprocess_env(pycache_prefix=Path(tmp) / "pycache")
         run([python, "-m", "venv", str(build_venv)], env=env)
         build_python = build_venv / "bin" / "python"
-        run([str(build_python), "-m", "pip", "install", "-U", "pip"], env=env)
+        run([str(build_python), "-m", "pip", "install", "--require-hashes", "-r", str(REPO_ROOT / "requirements-build.txt")], env=env)
         generated_build_lib = REPO_ROOT / "build" / "lib"
         build_lib_existed = generated_build_lib.exists()
         try:
-            run([str(build_python), "-m", "pip", "install", "--target", str(site_packages), str(REPO_ROOT)], env=env)
-            run([str(build_python), "-m", "pip", "install", "--target", str(site_packages), *APP_BUNDLED_PYTHON_REQUIREMENTS], env=env)
+            run([str(build_python), "-m", "pip", "install", "--require-hashes", "--target", str(site_packages), "-r", str(REPO_ROOT / "requirements.txt")], env=env)
+            run([str(build_python), "-m", "pip", "install", "--no-build-isolation", "--no-deps", "--target", str(site_packages), str(REPO_ROOT)], env=env)
         finally:
             if not build_lib_existed and generated_build_lib.exists():
                 shutil.rmtree(generated_build_lib)

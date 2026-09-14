@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=77", "wheel"]
+requires = ["setuptools==84.0.0", "wheel==0.48.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,7 +7,7 @@ name = "timecapsulesmb"
 version = "2.2.9"
 description = "Deploy modern Samba to Apple AirPort Time Capsules."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = "GPL-3.0-only"
 license-files = ["LICENSE"]
 authors = [
@@ -31,7 +31,6 @@ classifiers = [
   "Operating System :: POSIX :: Linux",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -41,11 +40,11 @@ classifiers = [
   "Topic :: System :: Networking",
 ]
 dependencies = [
-  "ifaddr>=0.2.0",
-  "pexpect>=4.9.0",
-  "pycryptodome>=3.20.0,<4",
-  "zopfli>=0.2.3.post1",
-  "zeroconf>=0.132.2",
+  "ifaddr==0.2.0",
+  "pexpect==4.9.0",
+  "pycryptodome==3.23.0",
+  "zopfli==0.4.3",
+  "zeroconf==0.151.3",
 ]
 
 [project.urls]
@@ -58,10 +57,10 @@ Source = "https://github.com/jamesyc/TimeCapsuleSMB"
 
 [project.optional-dependencies]
 dev = [
-  "coverage>=7.6.0",
-  "pytest>=8.4.0,<10",
-  "pytest-xdist>=3.6.1,<4",
-  "ruff>=0.12.0,<1",
+  "coverage==7.16.1",
+  "pytest==9.1.1",
+  "pytest-xdist==3.8.0",
+  "ruff==0.16.7",
 ]
 
 [project.scripts]

@@ -1467,3 +1467,19 @@ def test_validate_app_resources_rejects_swift_resource_bundle_crash(tmp_path: Pa
 
     with pytest.raises(RuntimeError, match="App executable resource validation failed"):
         package_app.validate_app_resources(app)
+
+
+def test_python_runtime_pkg_rejects_modified_local_package(tmp_path):
+    module = load_package_app_module()
+    package = tmp_path / "python.pkg"
+    package.write_bytes(b"modified runtime")
+    args = SimpleNamespace(python_runtime_pkg=package, python_runtime_url=module.PYTHON_RUNTIME_URL)
+    with pytest.raises(RuntimeError, match="checksum mismatch"):
+        module.python_runtime_pkg(args)
+
+
+def test_python_runtime_pkg_rejects_unreviewed_url():
+    module = load_package_app_module()
+    args = SimpleNamespace(python_runtime_pkg=None, python_runtime_url="https://example.invalid/python.pkg")
+    with pytest.raises(RuntimeError, match="reviewed package manifest"):
+        module.python_runtime_pkg(args)

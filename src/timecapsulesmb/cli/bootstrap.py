@@ -21,7 +21,7 @@ REQUIREMENTS = REPO_ROOT / "requirements.txt"
 HOMEBREW_INSTALL_COMMAND = '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
 MACOS_SSHPASS_FORMULA = "sshpass"
 REQUIRED_HOST_TOOLS = ("sshpass", "smbclient")
-MIN_BOOTSTRAP_PYTHON = (3, 9)
+MIN_BOOTSTRAP_PYTHON = (3, 10)
 MIN_MACOS_AUTO_HOST_TOOL_INSTALL = (14, 0)
 PYTHON_VERSION_PROBE = "import sys; print('%d.%d.%d' % sys.version_info[:3])"
 MACOS_HOST_TOOL_PACKAGES = {
@@ -278,9 +278,9 @@ def ensure_pip(venv_python: Path) -> None:
 def install_python_requirements(venv_python: Path) -> None:
     print("Installing Python dependencies into .venv", flush=True)
     ensure_pip(venv_python)
-    run([str(venv_python), "-m", "pip", "install", "-U", "pip"])
-    run([str(venv_python), "-m", "pip", "install", "-r", str(REQUIREMENTS)])
-    run([str(venv_python), "-m", "pip", "install", "-e", str(REPO_ROOT)])
+    run([str(venv_python), "-m", "pip", "install", "--require-hashes", "-r", str(REPO_ROOT / "requirements-build.txt")])
+    run([str(venv_python), "-m", "pip", "install", "--require-hashes", "-r", str(REQUIREMENTS)])
+    run([str(venv_python), "-m", "pip", "install", "--no-build-isolation", "--no-deps", "-e", str(REPO_ROOT)])
 
 
 def _missing_required_host_tools() -> list[str]:
