@@ -1046,6 +1046,9 @@ tc_manager_start_smbd_if_needed() {
 
     tc_manager_refresh_runtime_identity_for_recovery
     tc_manager_validate_smbd_runtime_state || return 1
+    # Apple's SMB server owns TCP 445 even when our optional NBNS responder is
+    # disabled. Release that listener before every Samba start/recovery.
+    stop_runtime_process_by_ucomm "wcifsfs" "wcifsfs" || return 1
     rm -rf "$LOCKS_ROOT"/* >/dev/null 2>&1 || true
     "$TC_SMBD_BIN" -D -s "$TC_SMBD_CONF" >/dev/null 2>&1 || true
     tc_log "manager smbd recovery: smbd restart requested"

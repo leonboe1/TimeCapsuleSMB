@@ -2963,7 +2963,7 @@ MaSt = (
         self.assertIn("status=0\n", proc.stdout)
         self.assertEqual(
             events_text.splitlines(),
-            ["stage", "reload", "stop smbd", "launched", "stop mdns-advertiser"],
+            ["stage", "reload", "stop smbd", "stop wcifsfs", "launched", "stop mdns-advertiser"],
             events_text,
         )
         self.assertIn("manager smbd recovery: smbd config reload failed; restarting", log_text)
