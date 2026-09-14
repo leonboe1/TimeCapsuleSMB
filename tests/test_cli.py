@@ -73,6 +73,7 @@ from timecapsulesmb.core.config import (
 from timecapsulesmb.core.paths import AppPaths
 from timecapsulesmb.device.compat import DeviceCompatibility, compatibility_from_probe_result
 from timecapsulesmb.device.probe import (
+    AirportIdentityProbeResult,
     ManagedRuntimeProbeResult,
     ProbeResult,
     ProbeStepResult,
@@ -380,6 +381,14 @@ class CliTests(unittest.TestCase):
             )
         )
         self._exit_stack.enter_context(mock.patch("timecapsulesmb.device.probe.tcp_open", return_value=False))
+        self._exit_stack.enter_context(mock.patch(
+            "timecapsulesmb.cli.context.probe_remote_airport_identity_conn",
+            return_value=AirportIdentityProbeResult(model=None, syap=None, detail="fixture"),
+        ))
+        self._exit_stack.enter_context(mock.patch(
+            "timecapsulesmb.services.runtime_verification.read_runtime_log_tails_conn",
+            return_value={},
+        ))
         self._exit_stack.enter_context(mock.patch("timecapsulesmb.cli.configure.missing_required_python_module", return_value=None))
         def fake_configure_acp_probe(_connection, *, callbacks=None, **_kwargs):
             callbacks.add_debug_fields(

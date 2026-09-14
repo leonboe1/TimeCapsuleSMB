@@ -559,7 +559,10 @@ class CliFlowTests(unittest.TestCase):
             extra_steps=(ProbeStepResult("runtime_timeout", "fail", "runtime verification timed out after 200s"),),
         )
         output = io.StringIO()
-        with mock.patch("timecapsulesmb.services.runtime_verification.probe_managed_runtime_conn", return_value=result):
+        with (
+            mock.patch("timecapsulesmb.services.runtime_verification.probe_managed_runtime_conn", return_value=result),
+            mock.patch("timecapsulesmb.services.runtime_verification.read_runtime_log_tails_conn", return_value={}),
+        ):
             with redirect_stdout(output):
                 ok = verify_managed_runtime_flow(
                     self.make_connection(),
