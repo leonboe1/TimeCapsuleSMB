@@ -17,6 +17,7 @@ No router has been contacted, flashed, repaired, or configured during this work.
 | F7: firmware origin/cache validation | Pin 110 Apple images by HTTPS origin, model, version, size and SHA256. Check cached and local images; reject redirects and bound downloads/decompression. |
 | F8: broad SMB exposure | Default to LAN-only and reject interfaces whose LAN role cannot be identified. Preserve an existing explicit interface-policy choice. |
 | F10: dependencies/provenance | Pin build source commits, archive hashes, Python dependencies/runtime and CI actions. Update crypto dependencies and build GMP/zlib independently of the legacy SDK. Independent ARM rebuilds are in progress. |
+| F11: recoverable ACP credentials, found during patch validation | Block direct legacy ACP before opening a socket. Bootstrap and firmware recovery require an explicit one-command override on an isolated network. ACP's reversible password encoding and lack of server authentication cannot be repaired by SSH host-key verification. |
 
 Additional fixes keep updates/downloads on this fork, invalidate caches from other
 update sources, and correct macOS resource-bundle validation. No hardened app release

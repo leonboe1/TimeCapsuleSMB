@@ -153,7 +153,15 @@ This writes a hidden `.env` file in the repo folder, and the other `tcapsule` co
 
 At the start of `configure`, the tool first tries to discover your Time Capsule on the local network via mDNS/Bonjour. If it finds one, it prefills the SSH target for you. If it does not find one, it falls back to the normal manual prompt flow.
 
-`configure` also checks whether SSH is reachable. If SSH is closed, it enables SSH using the built-in Python 3 ACP client, reboots the device, waits for SSH to come up, and then continues the normal probing flow. If the password is wrong, it asks again instead of writing a broken `.env` file.
+`configure` checks whether SSH is reachable. Direct legacy ACP is disabled by default: its password encoding is reversible, and it does not authenticate the device. This affects automatic SSH enablement and ACP firmware operations. Use an isolated network for any necessary ACP setup or recovery.
+
+For an initial device with SSH disabled, explicitly allow ACP for that command only:
+
+```bash
+TCAPSULE_ALLOW_INSECURE_ACP=1 .venv/bin/tcapsule configure
+```
+
+After SSH starts, enroll its independently verified host key as described above and rerun `configure` without the override. Do not save this override in a profile or shell startup file. The same one-command override is required for ACP firmware operations on an isolated network. SSH operations continue to require the verified host key.
 
 The password you enter here is stored locally as `TC_PASSWORD` so the tool can keep using SSH and ACP. The managed Samba runtime reads the current device password on the Time Capsule at boot. In other words, after setup, you normally connect with:
 

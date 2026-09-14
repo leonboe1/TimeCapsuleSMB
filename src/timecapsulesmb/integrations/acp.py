@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+import os
 import socket
 import struct
 import zlib
@@ -43,6 +44,10 @@ class ACPConnectionError(ACPError):
 
 class ACPAuthError(ACPError):
     """Raised when the device rejects an authenticated ACP command."""
+
+
+class ACPSecurityError(ACPError):
+    """Raised before direct legacy ACP can expose credentials on the network."""
 
 
 class ACPProtocolError(ACPError):
@@ -261,6 +266,15 @@ def _open_connection(host: str, *, timeout: float) -> socket.socket:
 
 
 def _send_message(host: str, password: str, command: int, payload: bytes, *, flags: int = 0, timeout: float) -> socket.socket:
+    # The header key is reversible XOR with a public constant, not encryption.
+    # This protocol also provides no authenticated identity for the server.
+    if os.environ.get("TCAPSULE_ALLOW_INSECURE_ACP") != "1":
+        raise ACPSecurityError(
+            "Direct ACP is disabled: it exposes a recoverable administrator password "
+            "and does not authenticate the device. For one-time setup or firmware "
+            "recovery on an isolated network, prefix the CLI command with "
+            "TCAPSULE_ALLOW_INSECURE_ACP=1. Do not save this override in your profile."
+        )
     sock = _open_connection(host, timeout=timeout)
     try:
         sock.sendall(_compose_message(command, password, payload, flags=flags))

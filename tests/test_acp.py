@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import unittest
@@ -93,6 +94,12 @@ def response_with_header_version(response: bytes, version: int) -> bytes:
 
 
 class ACPTests(unittest.TestCase):
+    def setUp(self) -> None:
+        # Packet tests use fake sockets and explicitly exercise the legacy path.
+        override = mock.patch.dict(os.environ, {"TCAPSULE_ALLOW_INSECURE_ACP": "1"})
+        override.start()
+        self.addCleanup(override.stop)
+
     def test_header_key_matches_legacy_acp_algorithm(self) -> None:
         self.assertEqual(
             acp._generate_acp_header_key("password").hex(),
@@ -262,6 +269,32 @@ class ACPTests(unittest.TestCase):
                 set_ssh.disable_ssh_over_ssh(connection, reboot_device=True, log=messages.append)
 
         self.assertIn("Reboot request timed out; continuing to observe whether the device is rebooting...", messages[-1])
+
+
+class ACPSecurityTests(unittest.TestCase):
+    def test_default_blocks_every_acp_operation_before_connecting(self) -> None:
+        operations = [
+            lambda: acp.get_property_int("192.0.2.1", "fixture-secret", "syAP"),
+            lambda: acp.set_dbug("192.0.2.1", "fixture-secret", "0x3000"),
+            lambda: acp.reboot("192.0.2.1", "fixture-secret"),
+            lambda: acp.flash_firmware_bank("192.0.2.1", "fixture-secret", "primary", b"fixture"),
+        ]
+        with mock.patch.dict(os.environ), mock.patch.object(acp.socket, "create_connection") as connect:
+            os.environ.pop("TCAPSULE_ALLOW_INSECURE_ACP", None)
+            for index, operation in enumerate(operations):
+                with self.subTest(operation=index):
+                    with self.assertRaisesRegex(acp.ACPSecurityError, "recoverable administrator password") as raised:
+                        operation()
+                    self.assertNotIn("fixture-secret", str(raised.exception))
+            connect.assert_not_called()
+
+    def test_only_explicit_one_enables_legacy_acp(self) -> None:
+        for value in ["", "0", "true", "1 "]:
+            with self.subTest(value=value), mock.patch.dict(os.environ, {"TCAPSULE_ALLOW_INSECURE_ACP": value}):
+                with mock.patch.object(acp.socket, "create_connection") as connect:
+                    with self.assertRaises(acp.ACPSecurityError):
+                        acp.reboot("192.0.2.1", "fixture-secret")
+                    connect.assert_not_called()
 
 
 if __name__ == "__main__":
