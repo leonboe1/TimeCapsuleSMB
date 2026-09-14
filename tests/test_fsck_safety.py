@@ -15,9 +15,11 @@ from timecapsulesmb.services import maintenance
     (0, 0, "", 8, True, 8),
     (0, 0, "", 0, True, 0),
 ])
-def test_repair_fails_closed(monkeypatch, unmount_status, mount_status, mounts,
+def test_repair_fails_closed(tmp_path, monkeypatch, unmount_status, mount_status, mounts,
                            fsck_status, called, status):
     import shlex
+
+    monkeypatch.setattr("timecapsulesmb.device.maintenance_lock.MAINTENANCE_LOCK", str(tmp_path / "maintenance-lock"))
 
     for name in ("render_direct_pkill9_manager", "render_direct_pkill9_watchdog", "render_direct_pkill9_by_ucomm"):
         monkeypatch.setattr(maintenance, name, lambda *args: ":")

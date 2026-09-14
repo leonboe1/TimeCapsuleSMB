@@ -8,6 +8,7 @@ from timecapsulesmb.core.errors import system_exit_message
 from timecapsulesmb.core.net import endpoint_host
 from timecapsulesmb.deploy.executor import remote_request_reboot
 from timecapsulesmb.device.probe import wait_for_ssh_state_conn
+from timecapsulesmb.device.maintenance_lock import maintenance_lock
 from timecapsulesmb.integrations.acp import ACPError
 from timecapsulesmb.integrations.acp import reboot as acp_reboot
 from timecapsulesmb.services.callbacks import OperationCallbacks
@@ -140,43 +141,44 @@ def _request_reboot(
     request_reboot: Callable[[SshConnection], None] = remote_request_reboot,
     request_acp_reboot: Callable[..., object] = acp_reboot,
 ) -> None:
-    callbacks = callbacks or OperationCallbacks()
-    callbacks.stage("reboot")
-    callbacks.update(reboot_was_attempted=True)
-    callbacks.debug(reboot_request_strategy=strategy)
-    started = time.monotonic()
-    result = "success"
-    error_type: str | None = None
-    try:
-        if strategy == "acp_then_ssh":
-            _request_reboot_acp_then_ssh(
+    with maintenance_lock(connection, keep_on_success=True):
+        callbacks = callbacks or OperationCallbacks()
+        callbacks.stage("reboot")
+        callbacks.update(reboot_was_attempted=True)
+        callbacks.debug(reboot_request_strategy=strategy)
+        started = time.monotonic()
+        result = "success"
+        error_type: str | None = None
+        try:
+            if strategy == "acp_then_ssh":
+                _request_reboot_acp_then_ssh(
+                    connection,
+                    callbacks=callbacks,
+                    progress_log=progress_log,
+                    raise_on_request_error=raise_on_request_error,
+                    request_reboot=request_reboot,
+                    request_acp_reboot=request_acp_reboot,
+                )
+                return
+            _request_reboot_via_ssh(
                 connection,
                 callbacks=callbacks,
                 progress_log=progress_log,
-                raise_on_request_error=raise_on_request_error,
                 request_reboot=request_reboot,
-                request_acp_reboot=request_acp_reboot,
+                raise_on_request_error=raise_on_request_error,
             )
-            return
-        _request_reboot_via_ssh(
-            connection,
-            callbacks=callbacks,
-            progress_log=progress_log,
-            request_reboot=request_reboot,
-            raise_on_request_error=raise_on_request_error,
-        )
-    except Exception as exc:
-        result = "failure"
-        error_type = type(exc).__name__
-        raise
-    finally:
-        callbacks.measurement(
-            "reboot_request",
-            strategy=strategy,
-            duration_sec=round(time.monotonic() - started, 3),
-            result=result,
-            error_type=error_type,
-        )
+        except Exception as exc:
+            result = "failure"
+            error_type = type(exc).__name__
+            raise
+        finally:
+            callbacks.measurement(
+                "reboot_request",
+                strategy=strategy,
+                duration_sec=round(time.monotonic() - started, 3),
+                result=result,
+                error_type=error_type,
+            )
 
 
 def _request_reboot_acp_then_ssh(

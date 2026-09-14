@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 import shlex
 
+from timecapsulesmb.device.maintenance_lock import render_locked_script
+
 from timecapsulesmb.deploy.executor import DETACHED_SHUTDOWN_REBOOT_COMMAND
 from timecapsulesmb.device.processes import (
     render_direct_pkill9_by_ucomm,
@@ -146,4 +148,4 @@ def build_remote_fsck_script(device: str, mountpoint: str, *, reboot: bool) -> s
             "echo '--- reboot ---'",
             DETACHED_SHUTDOWN_REBOOT_COMMAND,
         ])
-    return "\n".join(lines)
+    return render_locked_script("\n".join(lines), keep_on_success=reboot)

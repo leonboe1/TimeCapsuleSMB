@@ -22,6 +22,11 @@ class CollectingSink:
 
 
 class DeployRebootStrategyTests(unittest.TestCase):
+    def setUp(self) -> None:
+        lease_transport = mock.patch("timecapsulesmb.device.maintenance_lock.run_ssh", return_value=mock.Mock(returncode=0))
+        lease_transport.start()
+        self.addCleanup(lease_transport.stop)
+
     def make_context(self) -> tuple[CollectingSink, AppOperationContext, SshConnection]:
         collector = CollectingSink()
         context = AppOperationContext("deploy", collector.sink)

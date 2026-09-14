@@ -352,6 +352,10 @@ class CliTests(unittest.TestCase):
 
     def setUp(self) -> None:
         self._exit_stack = ExitStack()
+        self._exit_stack.enter_context(mock.patch("timecapsulesmb.device.maintenance_lock.run_ssh", return_value=mock.Mock(returncode=0)))
+        # Firmware readback fixtures model the post-write bank; live preflight
+        # and its lock are exercised against stateful fixtures in test_maintenance_lock.
+        self._exit_stack.enter_context(mock.patch("timecapsulesmb.services.flash.validate_live_target_matches_backup"))
         self._firmware_entries = []
         self._exit_stack.enter_context(mock.patch(
             "timecapsulesmb.apple_firmware.pinned_firmware_entries",

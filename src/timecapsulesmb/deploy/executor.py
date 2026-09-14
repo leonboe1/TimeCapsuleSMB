@@ -4,7 +4,9 @@ import shlex
 from pathlib import Path, PurePosixPath
 from typing import Callable, Iterable, Mapping
 
-from timecapsulesmb.deploy.commands import RemoteAction, render_remote_actions
+from timecapsulesmb.deploy.commands import EnsureVolumeMountedAction, RemoteAction, render_remote_action
+from timecapsulesmb.device.maintenance_lock import active_lock, maintenance_lock, render_locked_script
+from timecapsulesmb.device.storage import ensure_volume_root_mounted_conn
 from timecapsulesmb.deploy.planner import DeploymentPlan, FileTransfer, UninstallPlan
 from timecapsulesmb.deploy.transaction import DeploymentTransaction, deploy_transaction
 from timecapsulesmb.transport.ssh import SshConnection, run_scp, run_ssh
@@ -91,16 +93,24 @@ def run_remote_actions(
     on_action_done: Callable[[RemoteAction, int, int], None] | None = None,
 ) -> None:
     action_list = list(actions)
-    commands = render_remote_actions(action_list)
     total = len(action_list)
-    for index, (action, command) in enumerate(zip(action_list, commands), start=1):
-        run_ssh(connection, command)
-        if on_action_done is not None:
-            on_action_done(action, index, total)
+    with maintenance_lock(connection, runner=run_ssh) as lease:
+        for index, action in enumerate(action_list, start=1):
+            if isinstance(action, EnsureVolumeMountedAction):
+                if not ensure_volume_root_mounted_conn(connection, action.volume_root, action.device_path, wait_seconds=action.wait_seconds):
+                    raise RuntimeError(f"Volume {action.volume_root} could not be mounted during maintenance")
+            else:
+                run_ssh(connection, lease.guard(render_remote_action(action)))
+            if on_action_done is not None:
+                on_action_done(action, index, total)
 
 
 def remote_request_reboot(connection: SshConnection) -> None:
-    run_ssh(connection, DETACHED_SHUTDOWN_REBOOT_COMMAND, check=False, timeout=REBOOT_REQUEST_TIMEOUT_SECONDS)
+    lease = active_lock(connection)
+    if lease is not None:
+        lease.reboot_pending = True
+    script = render_locked_script(DETACHED_SHUTDOWN_REBOOT_COMMAND, lease=lease, keep_on_success=True)
+    run_ssh(connection, f"/bin/sh -c {shlex.quote(script)}", check=False, timeout=REBOOT_REQUEST_TIMEOUT_SECONDS)
 
 
 def flush_remote_filesystem_writes(connection: SshConnection) -> None:
@@ -108,6 +118,6 @@ def flush_remote_filesystem_writes(connection: SshConnection) -> None:
 
 
 def remote_uninstall_payload(connection: SshConnection, plan: UninstallPlan) -> None:
-    # Use for loop to avoid rc=255 bug on NetBSD 4 Time Capsules
-    for command in render_remote_actions(plan.remote_actions):
-        run_ssh(connection, command)
+    # Hold exclusion across all deletions, including recovery snapshots.
+    with maintenance_lock(connection, runner=run_ssh, reuse=False):
+        run_remote_actions(connection, plan.remote_actions)

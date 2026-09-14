@@ -79,6 +79,11 @@ class FakeCommandContext:
 
 
 class CliFlowTests(unittest.TestCase):
+    def setUp(self) -> None:
+        lease_transport = mock.patch("timecapsulesmb.device.maintenance_lock.run_ssh", return_value=mock.Mock(returncode=0))
+        lease_transport.start()
+        self.addCleanup(lease_transport.stop)
+
     def make_connection(self) -> SshConnection:
         return SshConnection("root@10.0.0.2", "pw", "-o foo")
 

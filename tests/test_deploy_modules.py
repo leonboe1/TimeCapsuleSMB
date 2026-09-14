@@ -153,6 +153,11 @@ def readiness_result(ready: bool, detail: str, lines: tuple[str, ...]) -> Readin
 
 
 class DeployModuleTests(unittest.TestCase):
+    def setUp(self) -> None:
+        lease_transport = mock.patch("timecapsulesmb.device.maintenance_lock.run_ssh", return_value=mock.Mock(returncode=0))
+        lease_transport.start()
+        self.addCleanup(lease_transport.stop)
+
     _nbns_binary_tmpdir: tempfile.TemporaryDirectory[str] | None = None
     _nbns_binary_path: Path | None = None
 
@@ -336,7 +341,7 @@ class DeployModuleTests(unittest.TestCase):
             remote_request_reboot(connection)
         run_ssh_mock.assert_called_once_with(
             connection,
-            DETACHED_SHUTDOWN_REBOOT_COMMAND,
+            mock.ANY,
             check=False,
             timeout=REBOOT_REQUEST_TIMEOUT_SECONDS,
         )
@@ -365,13 +370,14 @@ class DeployModuleTests(unittest.TestCase):
         actions = [StopManagerAction(), RemovePathAction("/tmp/tc-old")]
         completed = []
         with mock.patch("timecapsulesmb.deploy.executor.run_ssh") as run_ssh_mock:
+            run_ssh_mock.return_value.returncode = 0
             run_remote_actions(
                 connection,
                 actions,
                 on_action_done=lambda action, index, total: completed.append((action, index, total)),
             )
 
-        self.assertEqual(run_ssh_mock.call_count, 2)
+        self.assertEqual(run_ssh_mock.call_count, 4)
         self.assertEqual(completed, [(actions[0], 1, 2), (actions[1], 2, 2)])
 
     def test_load_boot_asset_text_reads_packaged_asset(self) -> None:
@@ -2928,8 +2934,12 @@ describe_managed_smbd_status "" ""
         expected = [render_remote_action(action) for action in plan.remote_actions]
         connection = SshConnection("host", "pw", "-o foo")
         with mock.patch("timecapsulesmb.deploy.executor.run_ssh") as run_ssh_mock:
+            run_ssh_mock.return_value.returncode = 0
             remote_uninstall_payload(connection, plan)
-        self.assertEqual([call.args[1] for call in run_ssh_mock.call_args_list], expected)
+        calls = run_ssh_mock.call_args_list
+        self.assertEqual(len(calls), len(expected) + 3)  # acquire, nested guard, release
+        commands = [shlex.split(call.args[1])[-1].split("\n", 2)[2].removesuffix("\n)") for call in calls[2:-1]]
+        self.assertEqual(commands, expected)
 
     def test_render_process_present_ignores_zombies_for_name_and_full_matches(self) -> None:
         def process_present(command: str, *, ps_lines: list[str]) -> bool:

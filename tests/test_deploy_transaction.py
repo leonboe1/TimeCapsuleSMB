@@ -108,6 +108,31 @@ def test_complete_deployment_retains_previous_programs_and_metadata(device):
     assert Path(plan.flash_targets["tcapsulesmb.conf"]).stat().st_mode & 0o777 == 0o600
 
 
+def test_uninstall_cannot_erase_active_deployment_recovery(device, monkeypatch):
+    from types import SimpleNamespace
+    from timecapsulesmb.deploy import executor, transaction as transaction_module
+    from timecapsulesmb.device import maintenance_lock
+
+    plan, sources, _, metadata, connection, stop, _ = device
+    transaction = DeploymentTransaction(plan, connection, stop)
+    transaction.prepare()
+    transaction.stage(sources)
+    transaction.commit()
+    journal = (Path(transaction.root) / "journal.json").read_bytes()
+    monkeypatch.setattr(maintenance_lock, "MAINTENANCE_LOCK", transaction.lock)
+    monkeypatch.setattr(executor, "run_ssh", transaction_module.run_ssh)
+    other_client = SshConnection(connection.host, "", "")
+    with pytest.raises(RuntimeError, match="maintenance lock"):
+        executor.remote_uninstall_payload(other_client, SimpleNamespace(
+            remote_actions=[RemovePayloadProgramsAction(plan.payload_dir)],
+        ))
+    assert (Path(transaction.root) / "journal.json").read_bytes() == journal
+    assert metadata.read_bytes() == b"irreplaceable metadata\0\xff"
+    transaction.rollback()
+    assert_recovered(device)
+    transaction.release()
+
+
 @pytest.mark.parametrize("failed_index", range(11))
 @pytest.mark.parametrize("corruption", [False, True])
 def test_failed_or_corrupt_upload_never_changes_live_files(device, monkeypatch, failed_index, corruption):
@@ -226,7 +251,7 @@ def test_second_deployment_cannot_replace_an_active_transactions_files(device):
     first.prepare()
     journal = Path(first.root) / "journal.json"
     content = journal.read_bytes()
-    with pytest.raises(RuntimeError, match="Deployment lock"):
+    with pytest.raises(RuntimeError, match="maintenance lock"):
         deploy(device)
     assert journal.read_bytes() == content
     assert (Path(first.lock) / "owner").read_text().split()[0] == first.token

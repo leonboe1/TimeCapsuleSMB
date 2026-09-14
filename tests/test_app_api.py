@@ -182,6 +182,7 @@ def readiness_result(ready: bool, detail: str, lines: tuple[str, ...]) -> Readin
 class AppApiTests(unittest.TestCase):
     def setUp(self) -> None:
         self._exit_stack = ExitStack()
+        self._exit_stack.enter_context(mock.patch("timecapsulesmb.device.maintenance_lock.run_ssh", return_value=mock.Mock(returncode=0)))
         self._telemetry_client = mock.Mock()
         # App API tests exercise GUI/backend telemetry-enabled operations.
         # Keep telemetry mocked here so unit tests never POST to the live telemetry service.

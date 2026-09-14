@@ -10,6 +10,7 @@ import time
 import uuid
 
 from timecapsulesmb.device.errors import DeviceError
+from timecapsulesmb.device.maintenance_lock import MaintenanceLock, active_lock, render_locked_script
 from timecapsulesmb.transport.ssh import SshCommandTimeout, SshConnection, run_ssh
 
 
@@ -606,11 +607,11 @@ def _remote_mounted_test(volume_root: str) -> str:
     )
 
 
-def render_ensure_volume_root_mounted_script(volume_root: str, _device_path: str, wait_seconds: int) -> str:
+def render_ensure_volume_root_mounted_script(volume_root: str, _device_path: str, wait_seconds: int, *, lease: MaintenanceLock | None = None) -> str:
     root = shlex.quote(volume_root)
     mounted_test = _remote_mounted_test(volume_root)
     attempts = DISKD_USE_VOLUME_GUARD_ATTEMPTS
-    return (
+    script = (
         f"mkdir -p {root}; "
         "diskd_attempt=1; "
         f"while [ \"$diskd_attempt\" -le {attempts} ]; do "
@@ -628,6 +629,8 @@ def render_ensure_volume_root_mounted_script(volume_root: str, _device_path: str
         "exit 1"
     )
 
+    return render_locked_script(script, lease=lease)
+
 
 def ensure_volume_root_mounted_conn(
     connection: SshConnection,
@@ -636,7 +639,7 @@ def ensure_volume_root_mounted_conn(
     *,
     wait_seconds: int,
 ) -> bool:
-    script = render_ensure_volume_root_mounted_script(volume_root, device_path, wait_seconds)
+    script = render_ensure_volume_root_mounted_script(volume_root, device_path, wait_seconds, lease=active_lock(connection))
     timeout = max(30, wait_seconds * DISKD_USE_VOLUME_GUARD_ATTEMPTS + 45)
     proc = run_ssh(connection, f"/bin/sh -c {shlex.quote(script)}", check=False, timeout=timeout)
     return proc.returncode == 0
@@ -702,6 +705,7 @@ def volume_root_is_writable_conn(connection: SshConnection, volume_root: str) ->
         "fi; "
         "exit 1"
     )
+    script = render_locked_script(script, lease=active_lock(connection))
     try:
         proc = run_ssh(connection, f"/bin/sh -c {shlex.quote(script)}", check=False, timeout=30)
     except SshCommandTimeout as exc:

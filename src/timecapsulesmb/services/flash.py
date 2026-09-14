@@ -13,6 +13,7 @@ from timecapsulesmb.core.net import endpoint_host
 from timecapsulesmb.core.paths import default_user_data_dir, safe_path_part
 from timecapsulesmb.device.compat import DeviceCompatibility, is_netbsd4_payload_family, payload_family_description
 from timecapsulesmb.device.errors import DeviceError
+from timecapsulesmb.device.maintenance_lock import maintenance_lock
 from timecapsulesmb.flash import (
     FlashAnalysis,
     FlashAnalysisError,
@@ -700,30 +701,32 @@ def write_flash_plan(
 ) -> dict[str, object]:
     if plan.target_bank is None or plan.payload is None:
         raise FlashAnalysisError("flash plan has no write payload")
-    record_write_outcome(
-        bundle=bundle,
-        plan=plan,
-        status="attempting",
-        write_validated=False,
-        write_may_have_modified_device=True,
-        stage=write_stage_for_plan(plan),
-    )
-    write_result = write_and_validate_plan(
-        connection=target.connection,
-        acp_host=target.acp_host,
-        plan=plan,
-        os_release=target.compatibility.os_release,
-        flash_firmware_bank_func=flash_firmware_bank,
-        dump_remote_bank_func=partial(dump_remote_bank_for_validation, log=log),
-        get_property_int_func=partial(get_property_int_for_validation, log=log),
-        timeout=FLASH_WRITE_TIMEOUT_SECONDS,
-    )
-    record_write_outcome(
-        bundle=bundle,
-        plan=plan,
-        status="validated",
-        write_validated=True,
-        write_may_have_modified_device=True,
-        write_result=write_result,
-    )
-    return write_result
+    with maintenance_lock(target.connection, reuse=False):
+        validate_live_target_matches_backup(connection=target.connection, plan=plan, log=log)
+        record_write_outcome(
+            bundle=bundle,
+            plan=plan,
+            status="attempting",
+            write_validated=False,
+            write_may_have_modified_device=True,
+            stage=write_stage_for_plan(plan),
+        )
+        write_result = write_and_validate_plan(
+            connection=target.connection,
+            acp_host=target.acp_host,
+            plan=plan,
+            os_release=target.compatibility.os_release,
+            flash_firmware_bank_func=flash_firmware_bank,
+            dump_remote_bank_func=partial(dump_remote_bank_for_validation, log=log),
+            get_property_int_func=partial(get_property_int_for_validation, log=log),
+            timeout=FLASH_WRITE_TIMEOUT_SECONDS,
+        )
+        record_write_outcome(
+            bundle=bundle,
+            plan=plan,
+            status="validated",
+            write_validated=True,
+            write_may_have_modified_device=True,
+            write_result=write_result,
+        )
+        return write_result

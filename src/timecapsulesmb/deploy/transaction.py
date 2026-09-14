@@ -17,6 +17,7 @@ from typing import Callable, Mapping
 
 from timecapsulesmb.deploy.planner import DeploymentPlan, FileTransfer
 from timecapsulesmb.device.storage import ensure_volume_root_mounted_conn
+from timecapsulesmb.device.maintenance_lock import MaintenanceLock
 from timecapsulesmb.transport.ssh import SshConnection, run_scp, run_ssh, run_ssh_capture_bytes
 
 
@@ -35,22 +36,19 @@ def _digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-class DeploymentTransaction:
+class DeploymentTransaction(MaintenanceLock):
     def __init__(
         self, plan: DeploymentPlan, connection: SshConnection, stop_runtime: Callable[[], None],
         report: Callable[[str], None] | None = None,
     ):
         self.plan = plan
-        self.connection = connection
+        super().__init__(connection, path=str(PurePosixPath(plan.flash_targets["rc.local"]).parent.parent / "Memory/.tcapsulesmb-deploy-lock"), runner=run_ssh)
         self.stop_runtime = stop_runtime
         self.report = report or logging.getLogger(__name__).warning
         self.root = f"{plan.payload_dir}/{TRANSACTION_DIR}"
         self.previous = f"{plan.payload_dir}/{PREVIOUS_DIR}"
         self.journal: dict = {"format": 1, "phase": "staging", "entries": []}
         self.armed = False
-        self.token = uuid.uuid4().hex
-        self.lock = str(PurePosixPath(plan.flash_targets["rc.local"]).parent.parent / "Memory/.tcapsulesmb-deploy-lock")
-        self.locked = False
         destinations = [t.destination for t in plan.uploads]
         if len(set(destinations)) != len(destinations) or plan.flash_targets["rc.local"] not in destinations:
             raise ValueError("A deployment transaction requires unique targets and rc.local")
@@ -74,44 +72,10 @@ class DeploymentTransaction:
         )
         run_ssh(self.connection, f"/bin/sh -c {shlex.quote('set -eu; umask 077; ' + ownership + script)}", timeout=300)
 
-    def acquire(self) -> None:
-        self._mounted()
-        lock = shlex.quote(self.lock)
-        owner = shlex.quote(f"{self.lock}/owner")
-        ancestors = "".join(f"[ ! -L {shlex.quote(str(p))} ]; " for p in PurePosixPath(self.lock).parents)
-        script = ancestors + (
-            f"[ ! -L {lock} ]; mkdir {lock}; chmod 700 {lock}; "
-            f"printf '%s\\n' {self.token} > {owner}"
-        )
-        result = run_ssh(self.connection, f"/bin/sh -c {shlex.quote('set -eu; umask 077; ' + script)}", check=False, timeout=30)
-        if result.returncode != 0:
-            raise RuntimeError(
-                "Deployment lock is held or invalid. Another deployment may be active. "
-                "If that client has stopped, reboot the device to clear its RAM lock, then rerun deploy."
-            )
-        self.locked = True
-
-    def release(self) -> None:
-        if not self.locked:
-            return
-        owner = shlex.quote(f"{self.lock}/owner")
-        script = (
-            f"[ ! -L {shlex.quote(self.lock)} ] && [ ! -L {owner} ] && "
-            f"read token < {owner} && [ \"$token\" = {self.token} ] && "
-            f"rm -f {owner} && rmdir {shlex.quote(self.lock)}"
-        )
-        # Disconnects retain the RAM lock until reboot; never steal another
-        # client's lock or mask the operation's own result during cleanup.
-        try:
-            run_ssh(self.connection, f"/bin/sh -c {shlex.quote(script)}", check=False, timeout=30)
-        except Exception:
-            pass
-        self.locked = False
-
     def resume_after_reboot(self) -> None:
         # Real reboot clears the RAM lock. The durable journal identifies this
         # transaction so a late client cannot modify a subsequent deployment.
-        self.locked = False
+        self.forget()
         self.armed = False
         self.acquire()
         if self._load_journal(self.root).get("transaction_id") != self.journal.get("transaction_id"):

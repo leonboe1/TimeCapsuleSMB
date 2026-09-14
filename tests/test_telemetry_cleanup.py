@@ -111,19 +111,31 @@ def test_old_helper_cannot_delete_fixed_files_without_ownership(cleanup_rig):
     assert (memory / 'debug.sig').exists()
 
 
-def test_uninstall_stops_before_deleting_files_when_cleanup_is_busy():
+def test_uninstall_stops_before_deleting_files_when_cleanup_is_busy(tmp_path, monkeypatch):
+    lock = tmp_path / "maintenance-lock"
+    monkeypatch.setattr("timecapsulesmb.device.maintenance_lock.MAINTENANCE_LOCK", str(lock))
     plan = build_uninstall_plan('host', ['/Volumes/dk2'], ['/Volumes/dk2/.samba4'], reboot_after_uninstall=False)
     cleanup = StopTelemetryAction(cleanup=True)
     cleanup_command = render_remote_action(cleanup)
     executed = []
-    def ssh(_connection, command):
-        executed.append(command)
-        if command == cleanup_command:
+    def ssh(_connection, command, *, check=True, **kwargs):
+        script = shlex.split(command)[-1]
+        if "\n(\n" not in script:
+            return subprocess.run(command, shell=True, check=check, capture_output=True, text=True)
+        guard, body = script.split("\n(\n", 1)
+        subprocess.run(["/bin/sh", "-c", guard], check=True)
+        action = body.removesuffix("\n)")
+        if action == ":":
+            return subprocess.CompletedProcess(command, 0)
+        executed.append(action)
+        if action == cleanup_command:
             raise RuntimeError('telemetry busy')
+        return subprocess.CompletedProcess(command, 0)
     with mock.patch('timecapsulesmb.deploy.executor.run_ssh', side_effect=ssh):
         with pytest.raises(RuntimeError, match='telemetry busy'):
             remote_uninstall_payload(SshConnection('host', 'password', ''), plan)
     assert executed == [render_remote_action(action) for action in plan.remote_actions[:plan.remote_actions.index(cleanup) + 1]]
+    assert lock.is_dir()  # Unknown remote cleanup state must not unlock maintenance.
     assert remote_action_to_jsonable(cleanup) == {'kind': 'stop_telemetry', 'cleanup': True}
     assert '/mnt/Memory/debug' in plan.verify_absent_targets
     assert '/mnt/Memory/debug.sig' in plan.verify_absent_targets
