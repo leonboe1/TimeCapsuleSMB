@@ -1,9 +1,9 @@
 --- a/main.c
 +++ b/main.c
-@@ -453,7 +453,15 @@
-         fprintf(stderr, "SSHPASS: searching for password prompt using match \"%s\"\n", compare1);
-     }
- 
+@@ -176 +176 @@
+-                error=RETURN_INVALID_ARGUMENTS;
++                return -(RETURN_INVALID_ARGUMENTS+1);
+@@ -456 +456,9 @@
 -    int numread=read(fd, buffer, sizeof(buffer)-1 );
 +    ssize_t numread=read(fd, buffer, sizeof(buffer)-1 );
 +    if( numread < 0 ) {
@@ -14,6 +14,3 @@
 +    if( numread == 0 )
 +        return -1;
 +
-     buffer[numread] = '\0';
-     if( args.verbose ) {
-         fprintf(stderr, "SSHPASS: read: %s\n", buffer);

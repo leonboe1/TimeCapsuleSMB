@@ -1,0 +1,250 @@
+{
+  "schema_version": 1,
+  "reviewed": "2026-09-14",
+  "architectures": {
+    "arm64": {
+      "minimum_macos": "14.0",
+      "publisher_index": "https://ghcr.io/v2/homebrew/core/samba/manifests/4.24.7",
+      "publisher_index_sha256": "483950a07c11109980cef2d63d423e0ea48a95a57db8c0e4dab3f44473428044",
+      "bottle_tag": "arm64_sonoma",
+      "bottles": [
+        {
+          "name": "ca-certificates",
+          "version": "2026-08-13",
+          "url": "https://ghcr.io/v2/homebrew/core/ca-certificates/blobs/sha256:37f5c1413f65c05d86e1279d76699f5d27ad77f8126f5776db13f3d64ee3d010",
+          "sha256": "37f5c1413f65c05d86e1279d76699f5d27ad77f8126f5776db13f3d64ee3d010",
+          "source": {
+            "url": "https://curl.se/ca/cacert-2026-08-13.pem",
+            "checksum": "f66dff1bdf8f96060b8177976f8b7d9254bc89bc4db933d769f7384d28480bc9"
+          },
+          "license": "MPL-2.0"
+        },
+        {
+          "name": "gmp",
+          "version": "6.3.0",
+          "url": "https://ghcr.io/v2/homebrew/core/gmp/blobs/sha256:3ea4034c547217e84019dada2669c1f2cd4a44a1cf094ad4881ff525713077c5",
+          "sha256": "3ea4034c547217e84019dada2669c1f2cd4a44a1cf094ad4881ff525713077c5",
+          "source": {
+            "url": "https://ftpmirror.gnu.org/gmp/gmp-6.3.0.tar.xz",
+            "checksum": "a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898"
+          },
+          "license": "LGPL-3.0-or-later OR GPL-2.0-or-later"
+        },
+        {
+          "name": "libunistring",
+          "version": "1.4.2",
+          "url": "https://ghcr.io/v2/homebrew/core/libunistring/blobs/sha256:dc4d4b4406a2c7032dd838ae362ecaeba114d8ac9d9daaa18f760d1d71ba3577",
+          "sha256": "dc4d4b4406a2c7032dd838ae362ecaeba114d8ac9d9daaa18f760d1d71ba3577",
+          "source": {
+            "url": "https://ftpmirror.gnu.org/libunistring/libunistring-1.4.2.tar.gz",
+            "checksum": "e82664b170064e62331962126b259d452d53b227bb4a93ab20040d846fec01d8"
+          },
+          "license": "GPL-2.0-or-later OR LGPL-3.0-or-later"
+        },
+        {
+          "name": "json-c",
+          "version": "0.19",
+          "url": "https://ghcr.io/v2/homebrew/core/json-c/blobs/sha256:ce9c5f6c7095110cd5c9336b9277e1845cc55bb0fc98c7550576587fd28abbb1",
+          "sha256": "ce9c5f6c7095110cd5c9336b9277e1845cc55bb0fc98c7550576587fd28abbb1",
+          "source": {
+            "url": "https://s3.amazonaws.com/json-c_releases/releases/json-c-0.19.tar.gz",
+            "checksum": "37ad0249902e301bd9052bf712e511fcc6acff4ecaad4b5900aad9ce564e26de"
+          },
+          "license": "MIT"
+        },
+        {
+          "name": "gettext",
+          "version": "1.0",
+          "url": "https://ghcr.io/v2/homebrew/core/gettext/blobs/sha256:d11a97db1d735fb9860a9637e72b2765ef93536851d36c8f0b5cbbc22b539c5a",
+          "sha256": "d11a97db1d735fb9860a9637e72b2765ef93536851d36c8f0b5cbbc22b539c5a",
+          "source": {
+            "url": "https://ftpmirror.gnu.org/gettext/gettext-1.0.tar.gz",
+            "checksum": "85d99b79c981a404874c02e0342176cf75c7698e2b51fe41031cf6526d974f1a"
+          },
+          "license": "GPL-3.0-or-later AND LGPL-2.1-or-later"
+        },
+        {
+          "name": "libidn2",
+          "version": "2.3.8",
+          "url": "https://ghcr.io/v2/homebrew/core/libidn2/blobs/sha256:6c578e128c82759e211298ae9b004c83844c2626c074f5cf4950402399bdb8f1",
+          "sha256": "6c578e128c82759e211298ae9b004c83844c2626c074f5cf4950402399bdb8f1",
+          "source": {
+            "url": "https://ftpmirror.gnu.org/libidn/libidn2-2.3.8.tar.gz",
+            "checksum": "f557911bf6171621e1f72ff35f5b1825bb35b52ed45325dcdee931e5d3c0787a"
+          },
+          "license": "(GPL-2.0-or-later OR LGPL-3.0-or-later) AND (Unicode-TOU AND Unicode-DFS-2016) AND GPL-3.0-or-later AND LGPL-2.1-or-later AND FSFAP-no-warranty-disclaimer"
+        },
+        {
+          "name": "libtasn1",
+          "version": "4.21.0",
+          "url": "https://ghcr.io/v2/homebrew/core/libtasn1/blobs/sha256:2dceab4bf93738bd4f3efd9063a5cf60ccd96e5b0e5a3ac9fca508e42b5f3336",
+          "sha256": "2dceab4bf93738bd4f3efd9063a5cf60ccd96e5b0e5a3ac9fca508e42b5f3336",
+          "source": {
+            "url": "https://ftpmirror.gnu.org/libtasn1/libtasn1-4.21.0.tar.gz",
+            "checksum": "1d8a444a223cc5464240777346e125de51d8e6abf0b8bac742ac84609167dc87"
+          },
+          "license": "LGPL-2.1-or-later"
+        },
+        {
+          "name": "nettle",
+          "version": "4.0",
+          "url": "https://ghcr.io/v2/homebrew/core/nettle/blobs/sha256:ffcf86d94ce0ee31890cfc5e2debfba3f4ab9125a507ff21cfa557acac70087e",
+          "sha256": "ffcf86d94ce0ee31890cfc5e2debfba3f4ab9125a507ff21cfa557acac70087e",
+          "source": {
+            "url": "https://ftpmirror.gnu.org/nettle/nettle-4.0.tar.gz",
+            "checksum": "3addbc00da01846b232fb3bc453538ea5468da43033f21bb345cb1e9073f5094"
+          },
+          "license": "GPL-2.0-or-later OR LGPL-3.0-or-later"
+        },
+        {
+          "name": "p11-kit",
+          "version": "0.26.5",
+          "url": "https://ghcr.io/v2/homebrew/core/p11-kit/blobs/sha256:7071b29af6bbb5da6eafa50afc98a25f98b88fbd567786238f017d4256211f08",
+          "sha256": "7071b29af6bbb5da6eafa50afc98a25f98b88fbd567786238f017d4256211f08",
+          "source": {
+            "url": "https://github.com/p11-glue/p11-kit/releases/download/0.26.5/p11-kit-0.26.5.tar.xz",
+            "checksum": "f2cc09111e44bf3fea58f023180b33acea90aa82d042d6fbb623fbc5ba033bb7"
+          },
+          "license": "BSD-3-Clause"
+        },
+        {
+          "name": "gnutls",
+          "version": "3.8.13_2",
+          "url": "https://ghcr.io/v2/homebrew/core/gnutls/blobs/sha256:3e7fd6bf0a203f1b700c3c7e73d3a99b06c678eeb5335341339659ab5f00655c",
+          "sha256": "3e7fd6bf0a203f1b700c3c7e73d3a99b06c678eeb5335341339659ab5f00655c",
+          "source": {
+            "url": "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.13.tar.xz",
+            "checksum": "ffed8ec1bf09c2426d4f14aae377de4753b53e537d685e604e99a8b16ca9c97e"
+          },
+          "license": "LGPL-2.1-or-later AND GPL-3.0-only"
+        },
+        {
+          "name": "icu4c@78",
+          "version": "78.3",
+          "url": "https://ghcr.io/v2/homebrew/core/icu4c/78/blobs/sha256:e15b43778ccf194d2ebef8122ff654899825df30aa339ad39578c66500eaa6d8",
+          "sha256": "e15b43778ccf194d2ebef8122ff654899825df30aa339ad39578c66500eaa6d8",
+          "source": {
+            "url": "https://github.com/unicode-org/icu/releases/download/release-78.3/icu4c-78.3-sources.tgz",
+            "checksum": "3a2e7a47604ba702f345878308e6fefeca612ee895cf4a5f222e7955fabfe0c0"
+          },
+          "license": "Unicode-3.0"
+        },
+        {
+          "name": "openssl@3",
+          "version": "3.6.4",
+          "url": "https://ghcr.io/v2/homebrew/core/openssl/3/blobs/sha256:01887accd1964e9940ba516509e948eed9850d58d55cc02ca52c503435750685",
+          "sha256": "01887accd1964e9940ba516509e948eed9850d58d55cc02ca52c503435750685",
+          "source": {
+            "url": "https://github.com/openssl/openssl/releases/download/openssl-3.6.4/openssl-3.6.4.tar.gz",
+            "checksum": "9bffaa1ad1e07b354c21bd3324ec02fa15579f45a7d0494b3e74bc449b7333ef"
+          },
+          "license": "Apache-2.0"
+        },
+        {
+          "name": "krb5",
+          "version": "1.22.2",
+          "url": "https://ghcr.io/v2/homebrew/core/krb5/blobs/sha256:b63debb64f3b2d7875f0868e5cefbe3375ff635df7f0d1e4fc76f3716cdbb3a5",
+          "sha256": "b63debb64f3b2d7875f0868e5cefbe3375ff635df7f0d1e4fc76f3716cdbb3a5",
+          "source": {
+            "url": "https://kerberos.org/dist/krb5/1.22/krb5-1.22.2.tar.gz",
+            "checksum": "3243ffbc8ea4d4ac22ddc7dd2a1dc54c57874c40648b60ff97009763554eaf13"
+          },
+          "license": "BSD-2-Clause AND BSD-2-Clause-first-lines AND BSD-3-Clause AND BSD-4-Clause AND Brian-Gladman-2-Clause AND CMU-Mach-nodoc AND FSFULLRWD AND HPND AND HPND-export2-US AND HPND-export-US AND HPND-export-US-acknowledgement AND HPND-export-US-modify AND ISC AND MIT AND MIT-CMU AND OLDAP-2.8 AND OpenVision AND (BSD-2-Clause OR GPL-2.0-or-later)"
+        },
+        {
+          "name": "libxcrypt",
+          "version": "4.5.2",
+          "url": "https://ghcr.io/v2/homebrew/core/libxcrypt/blobs/sha256:6f459775883ffb7e1cd95dfeef36d3f490f20e3dcaa79055d318c46991d31f5f",
+          "sha256": "6f459775883ffb7e1cd95dfeef36d3f490f20e3dcaa79055d318c46991d31f5f",
+          "source": {
+            "url": "https://github.com/besser82/libxcrypt/releases/download/v4.5.2/libxcrypt-4.5.2.tar.xz",
+            "checksum": "71513a31c01a428bccd5367a32fd95f115d6dac50fb5b60c779d5c7942aec071"
+          },
+          "license": "LGPL-2.1-or-later"
+        },
+        {
+          "name": "lmdb",
+          "version": "1.0.2",
+          "url": "https://ghcr.io/v2/homebrew/core/lmdb/blobs/sha256:53d4566b101a98faa59709aa1d44444b6d384c84048b4708567076f4160c09e1",
+          "sha256": "53d4566b101a98faa59709aa1d44444b6d384c84048b4708567076f4160c09e1",
+          "source": {
+            "url": "https://git.openldap.org/openldap/openldap/-/archive/LMDB_1.0.2/openldap-LMDB_1.0.2.tar.bz2",
+            "checksum": "f35a2eb3a8e51650397604bbb49a1295221cd4739ff787d324f6c442c138a3ee"
+          },
+          "license": "OLDAP-2.8"
+        },
+        {
+          "name": "popt",
+          "version": "1.19",
+          "url": "https://ghcr.io/v2/homebrew/core/popt/blobs/sha256:2fb8801217b8bcddc5c15974478b7fd89992868fdd6b09360835e7b6f0cef791",
+          "sha256": "2fb8801217b8bcddc5c15974478b7fd89992868fdd6b09360835e7b6f0cef791",
+          "source": {
+            "url": "https://ftp.osuosl.org/pub/rpm/popt/releases/popt-1.x/popt-1.19.tar.gz",
+            "checksum": "c25a4838fc8e4c1c8aacb8bd620edb3084a3d63bf8987fdad3ca2758c63240f9"
+          },
+          "license": "MIT"
+        },
+        {
+          "name": "readline",
+          "version": "8.3.3",
+          "url": "https://ghcr.io/v2/homebrew/core/readline/blobs/sha256:15440b045b3e8294c8cbb819b32ba26520ce53b18bf947166a21a38e34662d84",
+          "sha256": "15440b045b3e8294c8cbb819b32ba26520ce53b18bf947166a21a38e34662d84",
+          "source": {
+            "url": "https://ftpmirror.gnu.org/readline/readline-8.3.tar.gz",
+            "checksum": "fe5383204467828cd495ee8d1d3c037a7eba1389c22bc6a041f627976f9061cc"
+          },
+          "license": "GPL-3.0-or-later"
+        },
+        {
+          "name": "talloc",
+          "version": "2.5.0",
+          "url": "https://ghcr.io/v2/homebrew/core/talloc/blobs/sha256:3afeb750b8c17993cb8b2bd55255b355de1174a711c75fbbf5a2cb74fa86c319",
+          "sha256": "3afeb750b8c17993cb8b2bd55255b355de1174a711c75fbbf5a2cb74fa86c319",
+          "source": {
+            "url": "https://www.samba.org/ftp/talloc/talloc-2.5.0.tar.gz",
+            "checksum": "912afa237510ae542a7733998eb18a12bcda35ab6729c8e2ddb43e8d0ebab007"
+          },
+          "license": "GPL-3.0-or-later"
+        },
+        {
+          "name": "tdb",
+          "version": "1.4.15",
+          "url": "https://ghcr.io/v2/homebrew/core/tdb/blobs/sha256:6036f32cf47d3abf27e88af33bc95e0b00156eb3f1fb8ab9c3a63ed075d1d96b",
+          "sha256": "6036f32cf47d3abf27e88af33bc95e0b00156eb3f1fb8ab9c3a63ed075d1d96b",
+          "source": {
+            "url": "https://www.samba.org/ftp/tdb/tdb-1.4.15.tar.gz",
+            "checksum": "fba09d8df1f1b9072aeae8e78b2bd43c5afef20b2f6deefa633aa14a377a8dd2"
+          },
+          "license": "LGPL-3.0-or-later AND GPL-3.0-or-later"
+        },
+        {
+          "name": "tevent",
+          "version": "0.17.2",
+          "url": "https://ghcr.io/v2/homebrew/core/tevent/blobs/sha256:4a345f1514eec67d12eba97e6218ff0145dc2807212ea981e9fb955f6e84ea9d",
+          "sha256": "4a345f1514eec67d12eba97e6218ff0145dc2807212ea981e9fb955f6e84ea9d",
+          "source": {
+            "url": "https://www.samba.org/ftp/tevent/tevent-0.17.2.tar.gz",
+            "checksum": "e53b1ac288d017d66dde0471cd429a806168ecf07179d7f019572d7a7e05f0d6"
+          },
+          "license": "LGPL-3.0-or-later"
+        },
+        {
+          "name": "samba",
+          "version": "4.24.7",
+          "url": "https://ghcr.io/v2/homebrew/core/samba/blobs/sha256:e43f4f6d82543f2d3c9651186e73c47975ae9607279d33168643f22fb3e475db",
+          "sha256": "e43f4f6d82543f2d3c9651186e73c47975ae9607279d33168643f22fb3e475db",
+          "source": {
+            "url": "https://download.samba.org/pub/samba/stable/samba-4.24.7.tar.gz",
+            "checksum": "45b7747a47452eff2b2159a44cc63eb43690d339fd1069088e023a015fed06c7"
+          },
+          "license": "GPL-3.0-or-later"
+        }
+      ]
+    }
+  },
+  "sshpass": {
+    "version": "1.10",
+    "url": "https://downloads.sourceforge.net/project/sshpass/sshpass/1.10/sshpass-1.10.tar.gz",
+    "sha256": "ad1106c203cbb56185ca3bad8c6ccafca3b4064696194da879f81c8d7bdfeeda"
+  }
+}
