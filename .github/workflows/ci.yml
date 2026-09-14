@@ -94,46 +94,37 @@ jobs:
     runs-on: macos-latest
     needs:
       - swift-test
-    env:
-      HOMEBREW_NO_INSTALL_CLEANUP: "1"
-
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
 
-      - name: Restore package cache
+      - name: Restore authenticated download archives
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
-          path: macos/TimeCapsuleSMB/.build/package-app
-          key: package-app-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('macos/TimeCapsuleSMB/tools/package_app.py', 'macos/TimeCapsuleSMB/Package.swift', 'macos/TimeCapsuleSMB/Assets/AppIcon/tcs.jpg', 'pyproject.toml', 'requirements.txt', 'src/**', 'bin/**') }}
+          path: |
+            macos/TimeCapsuleSMB/.build/package-app/python-runtime
+            macos/TimeCapsuleSMB/.build/package-app/python-downloads
+            macos/TimeCapsuleSMB/.build/package-app/native-downloads
+          key: verified-downloads-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('macos/TimeCapsuleSMB/tools/native-inputs.json', 'macos/TimeCapsuleSMB/tools/package_app.py') }}
           restore-keys: |
-            package-app-${{ runner.os }}-${{ runner.arch }}-
-
-      - name: Install native packaging tools
-        run: |
-          brew install samba
-          brew tap hudochenkov/sshpass
-          brew install sshpass
-
-          smbclient="$(brew --prefix samba)/bin/smbclient"
-          sshpass="$(brew --prefix sshpass)/bin/sshpass"
-
-          test -x "$smbclient"
-          test -x "$sshpass"
-          file "$smbclient" "$sshpass"
-          lipo -archs "$smbclient"
-          lipo -archs "$sshpass"
-
-          {
-            echo "TCAPSULE_PACKAGE_SMBCLIENT=$smbclient"
-            echo "TCAPSULE_PACKAGE_SSHPASS=$sshpass"
-          } >> "$GITHUB_ENV"
+            verified-downloads-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Package and validate native app
         run: |
           python3 macos/TimeCapsuleSMB/tools/package_app.py \
             --configuration release \
             --arch native \
-            --full-validation
+            --full-validation \
+            --zip
+
+      - name: Retain the exact app and verification records
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: TimeCapsuleSMB-arm64-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            macos/TimeCapsuleSMB/dist/TimeCapsuleSMB.app.zip
+            macos/TimeCapsuleSMB/dist/TimeCapsuleSMB-provenance.json

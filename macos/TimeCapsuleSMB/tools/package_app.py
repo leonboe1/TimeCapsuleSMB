@@ -13,12 +13,16 @@ import sys
 import tempfile
 import urllib.request
 from pathlib import Path
+from types import SimpleNamespace
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = PACKAGE_ROOT.parents[1]
 SRC_ROOT = REPO_ROOT / "src"
 sys.path.insert(0, str(SRC_ROOT))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import native_inputs  # noqa: E402
 
 from timecapsulesmb.core.release import CLI_VERSION, CLI_VERSION_CODE  # noqa: E402
 
@@ -45,11 +49,9 @@ CACHE_KEY_VERSION = 1
 PYTHON_RUNTIME_CACHE_VERSION = 2
 PYTHON_SITE_PACKAGES_CACHE_VERSION = 2
 APP_ICON_CACHE_VERSION = 1
-NATIVE_TOOLS_CACHE_VERSION = 1
 DEFAULT_NOTARY_PROFILE = "tcapsulesmb-notary"
 DEFAULT_NOTARY_TIMEOUT = "30m"
 CACHE_COMPLETE_MARKER = ".complete"
-CACHE_MANIFEST_FILE = "manifest.json"
 PACKAGE_CACHE_IGNORED_NAMES = {"__pycache__", ".DS_Store"}
 PACKAGE_CACHE_IGNORED_SUFFIXES = {".pyc", ".pyo"}
 PYTHON_SUBPROCESS_BYTECODE_CACHE = "python-bytecode"
@@ -124,7 +126,7 @@ def native_architecture() -> str:
 
 
 def resolve_architectures(values: list[str] | None) -> tuple[str, ...]:
-    requested = values or ["universal"]
+    requested = values or ["native"]
     architectures: list[str] = []
     for value in requested:
         if value == "universal":
@@ -142,7 +144,11 @@ def resolve_architectures(values: list[str] | None) -> tuple[str, ...]:
 
 
 def swift_build_dir(configuration: str, architecture: str) -> Path:
-    return PACKAGE_ROOT / ".build" / f"{architecture}-apple-macosx" / configuration
+    # SwiftPM's triple directory naming changes across toolchain releases.
+    # Ask the same toolchain that built the product instead of finding old output.
+    result = run_quiet(["swift", "build", "--package-path", str(PACKAGE_ROOT),
+                        "-c", configuration, "--triple", SWIFT_TRIPLES[architecture], "--show-bin-path"])
+    return Path(result.stdout.strip())
 
 
 def build_swift_product(configuration: str, architectures: tuple[str, ...], product_name: str) -> tuple[Path, list[Path]]:
@@ -355,10 +361,6 @@ def cache_key(data: dict[str, object]) -> str:
     return hashlib.sha256(encoded).hexdigest()[:24]
 
 
-def cache_is_complete(entry: Path, required_path: Path) -> bool:
-    return (entry / CACHE_COMPLETE_MARKER).is_file() and required_path.exists()
-
-
 def mark_cache_complete(entry: Path) -> None:
     (entry / CACHE_COMPLETE_MARKER).write_text("ok\n", encoding="utf-8")
 
@@ -371,92 +373,6 @@ def replace_path(source: Path, destination: Path) -> None:
             destination.unlink()
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.move(str(source), str(destination))
-
-
-def copy_path(source: Path, destination: Path) -> None:
-    if destination.exists() or destination.is_symlink():
-        if destination.is_dir() and not destination.is_symlink():
-            shutil.rmtree(destination)
-        else:
-            destination.unlink()
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    if source.is_dir():
-        shutil.copytree(source, destination, symlinks=True)
-    else:
-        shutil.copy2(source, destination)
-
-
-def cache_manifest_path(entry: Path) -> Path:
-    return entry / CACHE_MANIFEST_FILE
-
-
-def input_fingerprint(path: Path) -> dict[str, str]:
-    resolved = path.resolve()
-    return {"path": str(resolved), "sha256": sha256_file(resolved)}
-
-
-def input_fingerprints(paths: list[Path] | set[Path]) -> list[dict[str, str]]:
-    return [input_fingerprint(path) for path in sorted({path.resolve() for path in paths})]
-
-
-def write_cache_manifest(entry: Path, manifest: dict[str, object]) -> None:
-    cache_manifest_path(entry).write_text(
-        json.dumps(manifest, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
-
-
-def read_cache_manifest(entry: Path) -> dict[str, object] | None:
-    path = cache_manifest_path(entry)
-    if not path.is_file():
-        return None
-    value = json.loads(path.read_text(encoding="utf-8"))
-    return value if isinstance(value, dict) else None
-
-
-def cache_manifest_inputs_current(entry: Path) -> bool:
-    return cache_manifest_inputs_miss_reason(entry) is None
-
-
-def cache_manifest_inputs_miss_reason(entry: Path) -> str | None:
-    manifest = read_cache_manifest(entry)
-    if manifest is None:
-        return "cache manifest is missing"
-    inputs = manifest.get("inputs")
-    if not isinstance(inputs, list):
-        return "cache manifest inputs are invalid"
-    for record in inputs:
-        if not isinstance(record, dict):
-            return "cache manifest input record is invalid"
-        path_value = record.get("path")
-        sha256_value = record.get("sha256")
-        if not isinstance(path_value, str) or not isinstance(sha256_value, str):
-            return "cache manifest input record is incomplete"
-        path = Path(path_value)
-        if not path.is_file():
-            return f"cached input is missing: {path}"
-        current_sha256 = sha256_file(path)
-        if current_sha256 != sha256_value:
-            return f"cached input changed: {path}"
-    return None
-
-
-def cache_manifest_output_current(entry: Path, output_root: Path) -> bool:
-    return cache_manifest_output_miss_reason(entry, output_root) is None
-
-
-def cache_manifest_output_miss_reason(entry: Path, output_root: Path) -> str | None:
-    manifest = read_cache_manifest(entry)
-    if manifest is None:
-        return "cache manifest is missing"
-    expected = manifest.get("output_tree_sha256")
-    if not isinstance(expected, str):
-        return "cache manifest output hash is invalid"
-    if not output_root.is_dir():
-        return f"cached output directory is missing: {output_root}"
-    if sha256_tree(output_root) != expected:
-        return f"cached output tree changed: {output_root}"
-    return None
 
 
 def download_file(url: str, destination: Path) -> None:
@@ -633,6 +549,8 @@ def loader_relative_reference(loader: Path, dependency: Path) -> str:
 
 
 def rewrite_python_framework_install_names(framework: Path) -> None:
+    # Signing a nested Python.app executable also examines its parent bundle.
+    remove_signing_metadata(framework)
     version_dir = framework_version_dir(framework)
     original_prefix = f"/Library/Frameworks/{PYTHON_FRAMEWORK_NAME}/Versions/{version_dir.name}/"
     changed: set[Path] = set()
@@ -888,143 +806,6 @@ def macho_architectures(path: Path) -> set[str]:
     return set(completed.stdout.strip().split())
 
 
-def tool_env_names(name: str, architecture: str) -> list[str]:
-    tool = name.upper().replace("-", "_")
-    arch = architecture.upper().replace("-", "_")
-    return [
-        f"TCAPSULE_PACKAGE_{tool}_{arch}",
-        f"TCAPSULE_PACKAGE_{tool}",
-    ]
-
-
-def unique_paths(paths: list[Path]) -> list[Path]:
-    result: list[Path] = []
-    seen: set[Path] = set()
-    for path in paths:
-        resolved = path.expanduser()
-        if resolved in seen:
-            continue
-        seen.add(resolved)
-        result.append(resolved)
-    return result
-
-
-def tool_candidates(name: str, architecture: str) -> list[Path]:
-    paths: list[Path] = []
-    for env_name in tool_env_names(name, architecture):
-        value = os.getenv(env_name)
-        if value:
-            paths.append(Path(value))
-
-    preferred_prefixes = {
-        "arm64": [Path("/opt/homebrew/bin")],
-        "x86_64": [Path("/usr/local/bin")],
-    }
-    paths.extend(prefix / name for prefix in preferred_prefixes.get(architecture, ()))
-    if found := shutil.which(name):
-        paths.append(Path(found))
-    paths.extend([
-        Path("/opt/homebrew/bin") / name,
-        Path("/usr/local/bin") / name,
-    ])
-    return unique_paths(paths)
-
-
-def find_tool_for_architecture(name: str, architecture: str) -> Path | None:
-    for candidate in tool_candidates(name, architecture):
-        if not candidate.is_file() or not os.access(candidate, os.X_OK):
-            continue
-        if architecture in macho_architectures(candidate):
-            return candidate
-    return None
-
-
-def copy_arch_tool(source: Path, tools_bin: Path, name: str, architecture: str) -> None:
-    destination = tools_bin / architecture / name
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(source, destination)
-    destination.chmod(0o755)
-
-
-def write_tool_arch_wrapper(tools_bin: Path, name: str, architectures: tuple[str, ...]) -> None:
-    cases = "\n".join(
-        f"    {architecture}) exec \"$tool_dir/{architecture}/{name}\" \"$@\" ;;"
-        for architecture in architectures
-    )
-    wrapper = tools_bin / name
-    wrapper.write_text(
-        f"""#!/bin/sh
-set -eu
-tool_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
-arch="$(/usr/bin/uname -m)"
-case "$arch" in
-{cases}
-esac
-echo "{name} is not bundled for architecture $arch" >&2
-exit 127
-""",
-        encoding="utf-8",
-    )
-    wrapper.chmod(0o755)
-
-
-def resolve_tool_sources(architectures: tuple[str, ...]) -> dict[tuple[str, str], Path]:
-    sources: dict[tuple[str, str], Path] = {}
-    missing: list[str] = []
-
-    for tool in REQUIRED_HOST_TOOLS:
-        for architecture in architectures:
-            source = find_tool_for_architecture(tool, architecture)
-            if source is None:
-                missing.append(f"{tool} ({architecture})")
-                continue
-            sources[(tool, architecture)] = source
-
-    if missing:
-        joined = ", ".join(missing)
-        raise RuntimeError(f"Missing required host tool(s) for bundling: {joined}")
-    return sources
-
-
-def tool_source_records(sources: dict[tuple[str, str], Path]) -> list[dict[str, str]]:
-    records: list[dict[str, str]] = []
-    for tool, architecture in sorted(sources):
-        fingerprint = input_fingerprint(sources[(tool, architecture)])
-        records.append({
-            "tool": tool,
-            "architecture": architecture,
-            **fingerprint,
-        })
-    return records
-
-
-def copy_tools_from_sources(
-    resources_dir: Path,
-    architectures: tuple[str, ...],
-    sources: dict[tuple[str, str], Path],
-) -> None:
-    tools_bin = resources_dir / "Tools" / "bin"
-    tools_bin.mkdir(parents=True, exist_ok=True)
-
-    if len(architectures) == 1:
-        architecture = architectures[0]
-        for tool in REQUIRED_HOST_TOOLS:
-            source = sources[(tool, architecture)]
-            destination = tools_bin / tool
-            shutil.copy2(source, destination)
-            destination.chmod(0o755)
-        return
-
-    for tool in REQUIRED_HOST_TOOLS:
-        for architecture in architectures:
-            copy_arch_tool(sources[(tool, architecture)], tools_bin, tool, architecture)
-        write_tool_arch_wrapper(tools_bin, tool, architectures)
-
-
-def copy_tools(resources_dir: Path, architectures: tuple[str, ...]) -> None:
-    copy_tools_from_sources(resources_dir, architectures, resolve_tool_sources(architectures))
-
-
 def macho_dependencies(path: Path) -> list[str] | None:
     completed = subprocess.run(
         ["otool", "-L", str(path)],
@@ -1158,7 +939,17 @@ def macho_validation_roots(app: Path) -> list[Path]:
     ])
 
 
+def remove_signing_metadata(root: Path) -> None:
+    # These Finder attributes can accompany PSF framework files and make
+    # codesign fail. Preserve all other attributes, including quarantine.
+    if sys.platform != "darwin":
+        return
+    for name in ("com.apple.FinderInfo", "com.apple.ResourceFork"):
+        subprocess.run(["/usr/bin/xattr", "-dr", name, str(root)], capture_output=True, check=True)
+
+
 def ad_hoc_codesign(path: Path) -> None:
+    remove_signing_metadata(path)
     run_quiet(["codesign", "--force", "--sign", "-", str(path)])
 
 
@@ -1193,6 +984,7 @@ def ad_hoc_codesign_macho_roots(roots: list[Path]) -> None:
 
 
 def ad_hoc_codesign_python_framework(framework: Path) -> None:
+    remove_signing_metadata(framework)
     ad_hoc_codesign_macho_roots([framework])
     if framework.is_dir():
         ad_hoc_codesign(framework)
@@ -1262,162 +1054,10 @@ def developer_id_codesign_app_bundle(app: Path, identity: str) -> None:
     assert_app_bundle_signature_valid(app)
 
 
-def vendor_macho_dependencies(app: Path) -> set[Path]:
-    frameworks_dir = app / "Contents" / "Frameworks"
-    frameworks_dir.mkdir(exist_ok=True)
-    source_to_bundle: dict[Path, Path] = {}
-    bundle_to_source: dict[Path, Path] = {}
-    vendored_sources: set[Path] = set()
-    used_names: set[str] = set()
-    queue = macho_vendor_roots(app)
-    visited: set[Path] = set()
-
-    while queue:
-        current = queue.pop(0)
-        current_resolved = current.resolve()
-        if current_resolved in visited:
-            continue
-        visited.add(current_resolved)
-
-        dependencies = macho_dependencies(current)
-        if dependencies is None:
-            continue
-
-        for dependency in dependencies:
-            preferred_name: str
-            if is_external_macho_dependency(dependency):
-                source_path = Path(dependency)
-                source = source_path.resolve()
-                preferred_name = source_path.name
-            elif dependency.startswith("@loader_path/") and current_resolved in bundle_to_source:
-                relative_dependency = dependency.removeprefix("@loader_path/")
-                source = (bundle_to_source[current_resolved].parent / relative_dependency).resolve()
-                preferred_name = Path(relative_dependency).name
-                if not source.is_file():
-                    resolved_dependency = resolve_macho_dependency(current, app, dependency)
-                    if resolved_dependency is None or not resolved_dependency.exists():
-                        raise RuntimeError(f"Mach-O dependency does not exist: {dependency} referenced by {current}")
-                    continue
-            else:
-                continue
-            if not source.is_file():
-                raise RuntimeError(f"Mach-O dependency does not exist: {dependency} referenced by {current}")
-            vendored_sources.add(source)
-            bundled = source_to_bundle.get(source)
-            if bundled is None:
-                bundled = frameworks_dir / bundled_dependency_name(source, used_names, preferred_name=preferred_name)
-                shutil.copy2(source, bundled)
-                bundled.chmod(bundled.stat().st_mode | 0o200)
-                source_to_bundle[source] = bundled
-                bundle_to_source[bundled.resolve()] = source
-                queue.append(bundled)
-            run_quiet([
-                "install_name_tool",
-                "-change",
-                dependency,
-                loader_path_reference(current, bundled, frameworks_dir),
-                str(current),
-            ])
-
-        set_macho_id_if_supported(current)
-    return vendored_sources
-
-
-def native_tools_cache_entry(
-    architectures: tuple[str, ...],
-    sources: dict[tuple[str, str], Path],
-) -> Path:
-    key = cache_key({
-        "kind": "native-tools",
-        "version": NATIVE_TOOLS_CACHE_VERSION,
-        "architectures": architectures,
-        "tool_sources": tool_source_records(sources),
-    })
-    return package_cache_dir("native-tools") / key
-
-
-def native_tools_cache_is_complete(entry: Path) -> bool:
-    return native_tools_cache_miss_reason(entry) is None
-
-
-def native_tools_cache_miss_reason(entry: Path) -> str | None:
-    tools_bin = entry / "Contents" / "Resources" / "Tools" / "bin"
-    frameworks = entry / "Contents" / "Frameworks"
-    contents = entry / "Contents"
-    if not cache_is_complete(entry, tools_bin):
-        return "cache entry is incomplete or missing bundled tools"
-    if not frameworks.is_dir():
-        return f"cached Frameworks directory is missing: {frameworks}"
-    if reason := cache_manifest_inputs_miss_reason(entry):
-        return reason
-    if reason := cache_manifest_output_miss_reason(entry, contents):
-        return reason
-    return None
-
-
-def write_native_tools_manifest(
-    entry: Path,
-    architectures: tuple[str, ...],
-    sources: dict[tuple[str, str], Path],
-    dependency_sources: set[Path],
-) -> None:
-    input_paths = set(sources.values()) | dependency_sources
-    write_cache_manifest(entry, {
-        "schema_version": 1,
-        "kind": "native-tools",
-        "cache_version": NATIVE_TOOLS_CACHE_VERSION,
-        "architectures": list(architectures),
-        "tool_sources": tool_source_records(sources),
-        "inputs": input_fingerprints(input_paths),
-        "output_tree_sha256": sha256_tree(entry / "Contents"),
-    })
-
-
-def prepared_native_tools_layer(architectures: tuple[str, ...]) -> Path:
-    sources = resolve_tool_sources(architectures)
-    entry = native_tools_cache_entry(architectures, sources)
-    miss_reason = native_tools_cache_miss_reason(entry)
-    if miss_reason is None:
-        print("Using cached native tool layer.", file=sys.stderr)
-        return entry
-    print(f"Rebuilding native tool layer: {miss_reason}", file=sys.stderr)
-
-    cache_root = entry.parent
-    cache_root.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix=f"{entry.name}.tmp-", dir=cache_root) as tmp:
-        staging = Path(tmp) / "entry"
-        resources = staging / "Contents" / "Resources"
-        resources.mkdir(parents=True)
-        copy_tools_from_sources(resources, architectures, sources)
-        dependency_sources = vendor_macho_dependencies(staging)
-        remove_appledouble_files(staging)
-        ad_hoc_codesign_macho_bundle(staging)
-        assert_tool_architectures(staging, architectures)
-        assert_runtime_macho_architectures(staging, architectures)
-        assert_no_external_macho_dependencies(staging)
-        assert_macho_code_signatures_valid(staging)
-        write_native_tools_manifest(staging, architectures, sources, dependency_sources)
-        mark_cache_complete(staging)
-        replace_path(staging, entry)
-    return entry
-
-
 def copy_native_tools_layer(app: Path, architectures: tuple[str, ...], *, use_cache: bool = True) -> None:
-    contents = app / "Contents"
-    if use_cache:
-        layer = prepared_native_tools_layer(architectures)
-        copy_path(layer / "Contents" / "Resources" / "Tools", contents / "Resources" / "Tools")
-        copy_path(layer / "Contents" / "Frameworks", contents / "Frameworks")
-        return
-
-    copy_tools(contents / "Resources", architectures)
-    vendor_macho_dependencies(app)
-    remove_appledouble_files(app)
-    ad_hoc_codesign_macho_bundle(app)
-    assert_tool_architectures(app, architectures)
-    assert_runtime_macho_architectures(app, architectures)
-    assert_no_external_macho_dependencies(app)
-    assert_macho_code_signatures_valid(app)
+    # Reconstruct from pinned publisher archives, never from local executables or
+    # a previously signed output layer. Download cache hits are rehashed first.
+    native_inputs.bundle(app, architectures, package_cache_dir("native-downloads"), SimpleNamespace(**globals()))
 
 
 def assert_macho_code_signatures_valid_for_paths(paths: list[Path]) -> None:
@@ -1896,6 +1536,34 @@ def notarize_app(app: Path, output_dir: Path, *, profile: str, timeout: str) -> 
     return submission_id
 
 
+def write_package_provenance(app: Path, zip_path: Path | None, architectures: tuple[str, ...]) -> Path:
+    resources = app / "Contents" / "Resources"
+    native = json.loads((resources / "native-provenance.json").read_text())
+    inputs = json.loads((resources / "native-inputs.json").read_text())
+    files = {}
+    for path in sorted(app.rglob("*")):
+        relative = path.relative_to(app).as_posix()
+        if path.is_symlink():
+            files[relative] = {"symlink": os.readlink(path)}
+        elif path.is_file():
+            files[relative] = {"sha256": sha256_file(path), "size": path.stat().st_size,
+                               "mode": oct(path.stat().st_mode & 0o777)}
+    commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=REPO_ROOT, capture_output=True, text=True, check=True).stdout.strip()
+    dirty = bool(subprocess.run(["git", "status", "--porcelain"], cwd=REPO_ROOT, capture_output=True, text=True, check=True).stdout)
+    locks = {name: sha256_file(REPO_ROOT / name) for name in ("requirements.txt", "requirements-build.txt", "requirements-bootstrap.txt")}
+    record = {"schema_version": 1, "git_commit": commit, "git_dirty": dirty,
+              "architectures": architectures, "minimum_macos": "14.0",
+              "python": {"version": PYTHON_RUNTIME_VERSION, "url": PYTHON_RUNTIME_URL, "sha256": PYTHON_RUNTIME_SHA256},
+              "build_pip": {"version": PIP_VERSION, "url": PIP_URL, "sha256": PIP_SHA256},
+              "requirements_sha256": locks, "native_inputs": inputs, "native_build": native,
+              "app_files": files}
+    if zip_path is not None:
+        record["zip"] = {"name": zip_path.name, "sha256": sha256_file(zip_path), "size": zip_path.stat().st_size}
+    destination = app.parent / f"{APP_NAME}-provenance.json"
+    destination.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
+    return destination
+
+
 def package_app(args: argparse.Namespace) -> PackageResult:
     architectures = resolve_architectures(args.arch)
     executable, resource_build_dir = build_swift(args.configuration, architectures)
@@ -1957,6 +1625,7 @@ def package_app(args: argparse.Namespace) -> PackageResult:
     if getattr(args, "zip", False) or getattr(args, "zip_output", None):
         zip_path = (args.zip_output or (output_dir / f"{APP_NAME}.app.zip")).resolve()
         create_app_zip(app, zip_path)
+    write_package_provenance(app, zip_path, architectures)
     return PackageResult(app=app, zip_path=zip_path, notarization_archive=notarization_archive)
 
 
@@ -1968,7 +1637,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--arch",
         action="append",
         choices=("universal", "native", "arm64", "x86_64"),
-        help="Architecture to build; repeat for multiple architectures. Defaults to universal.",
+        help="Architecture to build; repeat for multiple architectures. Defaults to native; only arm64 currently has reviewed native inputs.",
     )
     parser.add_argument(
         "--icon",

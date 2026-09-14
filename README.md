@@ -76,23 +76,33 @@ Also, if you are an expert and want to DIY the install, you can copy the binary 
 
 ## Quick Start (macOS app)
 
-1. Build the app from this branch using `python3 macos/TimeCapsuleSMB/tools/package_app.py --configuration release --arch native --full-validation`. No hardened release is published yet. Future builds will be listed on [this fork’s releases page](https://github.com/leonboe1/TimeCapsuleSMB/releases).
+1. On an Apple Silicon Mac with macOS 14+ and Xcode build tools, check out `security/harden-fork` and run `python3 macos/TimeCapsuleSMB/tools/package_app.py --configuration release --arch native --full-validation --zip`. Packaging downloads pinned PSF/PyPI/Homebrew inputs, verifies their hashes, and builds patched sshpass locally. It does not use your Homebrew executables. Intel/universal packaging is disabled until its complete native dependency set is reviewed. No hardened release is published yet; successful CI runs retain their exact app ZIP and provenance JSON for 30 days.
 2. Open your locally built app. Keep macOS Gatekeeper enabled.
 3. Make sure *Local Network* permissions is granted (System Settings → Privacy & Security → Local Network → make sure TimeCapsuleSMB is allowed, then quit/reopen the app). Close and re-open the app after granting permissions.
 4. Click "Add Device" on the left sidebar, and select your device. 
 5. Enter your device password, and click "Save Device". 
-6. Wait for the app to enable SSH for your Time Capsule.
-    - If it fails, close the app, reopen the app, remove the saved device, and try again.
-    - Also, try rebooting your device.
+6. Establish SSH access and enroll an independently verified host-key fingerprint as described above. Legacy ACP SSH enablement is blocked by default; any necessary bootstrap must follow the isolated-network procedure. An unknown host key is a trust failure, not something to bypass by repeatedly adding the device.
 7. Click the added device in the left sidebar, and then click on the "Install/Update" tab.  
    <img width="543" height="390" alt="image" src="https://github.com/user-attachments/assets/ea17ef0e-7624-4a06-888c-72ba6f8d4f8f" />  
 8. Click "Install/Update" to deploy to the device.  
    <img width="544" height="390" alt="image" src="https://github.com/user-attachments/assets/49975391-29e5-46df-b249-2a75762983a7" />    
-    - If deploying to the device fails, try removing the saved device from the app, then go back to step 4 above to "Add Device" again. It sometimes takes more than one deploy to copy all the files over.
+    - If deploying fails, inspect the error and transaction state before retrying. An uncertain disconnect retains a lock because remote work may still be running; removing the saved device does not clear that condition safely.
     - There are reports the device may reset during a deploy, see [this issue](https://github.com/jamesyc/TimeCapsuleSMB/issues/177) for more information.
-9. (For gen 1-4 devices only) Go to the maintenance page "Persistent NetBSD4 Boot Hook" section. Install the firmware patch to allow the device to automatically start Samba after reboots. Click "Back Up and Inspect" and "Plan Patch" to check if it can be installed; then run "Write Patch" to flash it to your device.    
+9. Firmware patching is optional and requires separate model-specific review. Older NetBSD 4 devices can use manual activation after reboot; NetBSD 6 devices do not need this firmware patch. Do not flash firmware as a routine installation step.
    <img width="634" height="429" alt="image" src="https://github.com/user-attachments/assets/e35d8934-975b-4079-8087-8c22984a3165" />
 10. (Optional) Wait 5-10 minutes for Samba to fully start up, then go to the Checkup tab and run a Checkup.
+
+Before deployment, keep an independent, verified copy of your backups. Successful
+packaging tests do not establish behavior on your hardware. Verify backup access
+and an actual restore after deployment.
+
+The build writes `TimeCapsuleSMB.app.zip` and `TimeCapsuleSMB-provenance.json` to
+`macos/TimeCapsuleSMB/dist`. The provenance includes the source commit and dirty
+state, authenticated input hashes, patched sshpass build details, and hashes of
+every final app file and the ZIP. Executable dependency caches and local runtime
+overrides are not accepted. Only authenticated download archives are reused.
+These are locally signed development builds unless you supply your own Developer
+ID signing/notarization credentials; keep Gatekeeper enabled.
 
 Please [read the FAQ](FAQ.md) for more information. If you have an issue that could not be resolved via the FAQ, I would appreciate it if you [file an issue here](https://github.com/leonboe1/TimeCapsuleSMB/issues) for help.
 

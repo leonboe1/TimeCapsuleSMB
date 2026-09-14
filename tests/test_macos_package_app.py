@@ -204,6 +204,7 @@ def test_assert_bundle_layout_requires_swift_resource_bundle(tmp_path: Path) -> 
 def test_build_swift_creates_universal_binary_with_lipo(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     package_app = load_package_app_module()
     monkeypatch.setattr(package_app, "PACKAGE_ROOT", tmp_path)
+    monkeypatch.setattr(package_app, "swift_build_dir", lambda configuration, architecture: tmp_path / ".build" / f"{architecture}-apple-macosx" / configuration)
     calls: list[list[str]] = []
 
     def fake_run(cmd: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
@@ -232,6 +233,7 @@ def test_build_swift_creates_universal_binary_with_lipo(monkeypatch: pytest.Monk
 def test_build_helper_creates_universal_helper_with_lipo(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     package_app = load_package_app_module()
     monkeypatch.setattr(package_app, "PACKAGE_ROOT", tmp_path)
+    monkeypatch.setattr(package_app, "swift_build_dir", lambda configuration, architecture: tmp_path / ".build" / f"{architecture}-apple-macosx" / configuration)
     calls: list[list[str]] = []
 
     def fake_run(cmd: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
@@ -700,263 +702,6 @@ def test_assert_bundle_layout_uses_full_macho_validation_only_when_requested(
     assert calls == ["runtime", "external", "codesign", "app-codesign"]
 
 
-def test_copy_tools_creates_arch_dispatch_wrappers(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    package_app = load_package_app_module()
-    sources = tmp_path / "sources"
-    sources.mkdir()
-    for tool in ("sshpass", "smbclient"):
-        for architecture in ("arm64", "x86_64"):
-            source = sources / f"{tool}-{architecture}"
-            source.write_text(tool, encoding="utf-8")
-            source.chmod(0o755)
-            monkeypatch.setenv(f"TCAPSULE_PACKAGE_{tool.upper()}_{architecture.upper()}", str(source))
-
-    def fake_architectures(path: Path) -> set[str]:
-        if str(path).endswith("-arm64"):
-            return {"arm64"}
-        if str(path).endswith("-x86_64"):
-            return {"x86_64"}
-        return set()
-
-    monkeypatch.setattr(package_app, "macho_architectures", fake_architectures)
-    monkeypatch.setattr(package_app.shutil, "which", lambda name: None)
-
-    resources = tmp_path / "Resources"
-    package_app.copy_tools(resources, ("arm64", "x86_64"))
-
-    tools_bin = resources / "Tools" / "bin"
-    assert "arm64) exec" in (tools_bin / "sshpass").read_text(encoding="utf-8")
-    assert "x86_64) exec" in (tools_bin / "smbclient").read_text(encoding="utf-8")
-    assert (tools_bin / "arm64" / "sshpass").is_file()
-    assert (tools_bin / "x86_64" / "smbclient").is_file()
-
-
-def test_copy_tools_requires_each_architecture_when_requested(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    package_app = load_package_app_module()
-    arm_sshpass = tmp_path / "sshpass-arm64"
-    arm_sshpass.write_text("sshpass", encoding="utf-8")
-    arm_sshpass.chmod(0o755)
-    monkeypatch.setenv("TCAPSULE_PACKAGE_SSHPASS_ARM64", str(arm_sshpass))
-    monkeypatch.setattr(package_app, "macho_architectures", lambda path: {"arm64"} if path == arm_sshpass else set())
-    monkeypatch.setattr(package_app.shutil, "which", lambda name: None)
-
-    with pytest.raises(RuntimeError, match=r"sshpass \(x86_64\).*smbclient \(arm64\).*smbclient \(x86_64\)"):
-        package_app.copy_tools(tmp_path / "Resources", ("arm64", "x86_64"))
-
-
-def test_copy_native_tools_layer_reuses_cached_vendored_layer(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    package_app = load_package_app_module()
-    monkeypatch.setattr(package_app, "PACKAGE_ROOT", tmp_path)
-    sources_dir = tmp_path / "sources"
-    sshpass = sources_dir / "sshpass"
-    smbclient = sources_dir / "smbclient"
-    dependency = sources_dir / "libnative.dylib"
-    for path in (sshpass, smbclient, dependency):
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(path.name, encoding="utf-8")
-        path.chmod(0o755)
-    sources = {
-        ("sshpass", "arm64"): sshpass,
-        ("smbclient", "arm64"): smbclient,
-    }
-    vendor_calls: list[Path] = []
-
-    def fake_vendor(app: Path) -> set[Path]:
-        vendor_calls.append(app)
-        frameworks = app / "Contents" / "Frameworks"
-        frameworks.mkdir(parents=True, exist_ok=True)
-        (frameworks / "libnative.dylib").write_text("vendored", encoding="utf-8")
-        return {dependency}
-
-    monkeypatch.setattr(package_app, "resolve_tool_sources", lambda architectures: sources)
-    monkeypatch.setattr(package_app, "vendor_macho_dependencies", fake_vendor)
-    monkeypatch.setattr(package_app, "ad_hoc_codesign_macho_bundle", lambda app: None)
-    monkeypatch.setattr(package_app, "assert_tool_architectures", lambda app, architectures: None)
-    monkeypatch.setattr(package_app, "assert_runtime_macho_architectures", lambda app, architectures: None)
-    monkeypatch.setattr(package_app, "assert_no_external_macho_dependencies", lambda app: None)
-    monkeypatch.setattr(package_app, "assert_macho_code_signatures_valid", lambda app: None)
-
-    first_app = tmp_path / "First.app"
-    second_app = tmp_path / "Second.app"
-    package_app.copy_native_tools_layer(first_app, ("arm64",))
-    capsys.readouterr()
-    package_app.copy_native_tools_layer(second_app, ("arm64",))
-    captured = capsys.readouterr()
-
-    assert len(vendor_calls) == 1
-    assert "Using cached native tool layer." in captured.err
-    assert (second_app / "Contents" / "Resources" / "Tools" / "bin" / "smbclient").is_file()
-    assert (second_app / "Contents" / "Frameworks" / "libnative.dylib").is_file()
-
-
-def test_copy_native_tools_layer_rebuilds_when_vendored_input_changes(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    package_app = load_package_app_module()
-    monkeypatch.setattr(package_app, "PACKAGE_ROOT", tmp_path)
-    sources_dir = tmp_path / "sources"
-    sshpass = sources_dir / "sshpass"
-    smbclient = sources_dir / "smbclient"
-    dependency = sources_dir / "libnative.dylib"
-    for path in (sshpass, smbclient, dependency):
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("original", encoding="utf-8")
-        path.chmod(0o755)
-    sources = {
-        ("sshpass", "arm64"): sshpass,
-        ("smbclient", "arm64"): smbclient,
-    }
-    vendor_calls: list[Path] = []
-
-    def fake_vendor(app: Path) -> set[Path]:
-        vendor_calls.append(app)
-        frameworks = app / "Contents" / "Frameworks"
-        frameworks.mkdir(parents=True, exist_ok=True)
-        (frameworks / "libnative.dylib").write_text("vendored", encoding="utf-8")
-        return {dependency}
-
-    monkeypatch.setattr(package_app, "resolve_tool_sources", lambda architectures: sources)
-    monkeypatch.setattr(package_app, "vendor_macho_dependencies", fake_vendor)
-    monkeypatch.setattr(package_app, "ad_hoc_codesign_macho_bundle", lambda app: None)
-    monkeypatch.setattr(package_app, "assert_tool_architectures", lambda app, architectures: None)
-    monkeypatch.setattr(package_app, "assert_runtime_macho_architectures", lambda app, architectures: None)
-    monkeypatch.setattr(package_app, "assert_no_external_macho_dependencies", lambda app: None)
-    monkeypatch.setattr(package_app, "assert_macho_code_signatures_valid", lambda app: None)
-
-    package_app.copy_native_tools_layer(tmp_path / "First.app", ("arm64",))
-    capsys.readouterr()
-    dependency.write_text("changed", encoding="utf-8")
-    package_app.copy_native_tools_layer(tmp_path / "Second.app", ("arm64",))
-    captured = capsys.readouterr()
-
-    assert len(vendor_calls) == 2
-    assert "Rebuilding native tool layer: cached input changed:" in captured.err
-    assert str(dependency) in captured.err
-
-
-def test_copy_native_tools_layer_rebuilds_when_cached_output_changes(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    package_app = load_package_app_module()
-    monkeypatch.setattr(package_app, "PACKAGE_ROOT", tmp_path)
-    sources_dir = tmp_path / "sources"
-    sshpass = sources_dir / "sshpass"
-    smbclient = sources_dir / "smbclient"
-    dependency = sources_dir / "libnative.dylib"
-    for path in (sshpass, smbclient, dependency):
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("original", encoding="utf-8")
-        path.chmod(0o755)
-    sources = {
-        ("sshpass", "arm64"): sshpass,
-        ("smbclient", "arm64"): smbclient,
-    }
-    vendor_calls: list[Path] = []
-
-    def fake_vendor(app: Path) -> set[Path]:
-        vendor_calls.append(app)
-        frameworks = app / "Contents" / "Frameworks"
-        frameworks.mkdir(parents=True, exist_ok=True)
-        (frameworks / "libnative.dylib").write_text("vendored", encoding="utf-8")
-        return {dependency}
-
-    monkeypatch.setattr(package_app, "resolve_tool_sources", lambda architectures: sources)
-    monkeypatch.setattr(package_app, "vendor_macho_dependencies", fake_vendor)
-    monkeypatch.setattr(package_app, "ad_hoc_codesign_macho_bundle", lambda app: None)
-    monkeypatch.setattr(package_app, "assert_tool_architectures", lambda app, architectures: None)
-    monkeypatch.setattr(package_app, "assert_runtime_macho_architectures", lambda app, architectures: None)
-    monkeypatch.setattr(package_app, "assert_no_external_macho_dependencies", lambda app: None)
-    monkeypatch.setattr(package_app, "assert_macho_code_signatures_valid", lambda app: None)
-
-    package_app.copy_native_tools_layer(tmp_path / "First.app", ("arm64",))
-    capsys.readouterr()
-    cache_entry = next((tmp_path / ".build" / "package-app" / "native-tools").iterdir())
-    (cache_entry / "Contents" / "Frameworks" / "libnative.dylib").write_text("corrupt", encoding="utf-8")
-    package_app.copy_native_tools_layer(tmp_path / "Second.app", ("arm64",))
-    captured = capsys.readouterr()
-
-    assert len(vendor_calls) == 2
-    assert "Rebuilding native tool layer: cached output tree changed:" in captured.err
-    assert str(cache_entry / "Contents") in captured.err
-
-
-def test_vendor_macho_dependencies_rewrites_loader_path_to_matching_source_copy(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
-    package_app = load_package_app_module()
-    app = tmp_path / "TimeCapsuleSMB.app"
-    tools = app / "Contents" / "Resources" / "Tools" / "bin"
-    arm_tool = tools / "arm64" / "smbclient"
-    x86_tool = tools / "x86_64" / "smbclient"
-    for tool in (arm_tool, x86_tool):
-        tool.parent.mkdir(parents=True, exist_ok=True)
-        tool.write_text("tool", encoding="utf-8")
-        tool.chmod(0o755)
-
-    sources = tmp_path / "sources"
-    arm_i18n = sources / "arm64" / "libicui18n.78.dylib"
-    arm_icuuc = sources / "arm64" / "libicuuc.78.dylib"
-    arm_icudata = sources / "arm64" / "libicudata.78.dylib"
-    x86_i18n = sources / "x86_64" / "libicui18n.78.dylib"
-    x86_icuuc = sources / "x86_64" / "libicuuc.78.dylib"
-    x86_icudata = sources / "x86_64" / "libicudata.78.dylib"
-    for source in (arm_i18n, arm_icuuc, arm_icudata, x86_i18n, x86_icuuc, x86_icudata):
-        source.parent.mkdir(parents=True, exist_ok=True)
-        source.write_text(source.parent.name, encoding="utf-8")
-
-    def fake_dependencies(path: Path) -> list[str] | None:
-        resolved = path.resolve()
-        if resolved == arm_tool.resolve():
-            return [str(arm_i18n)]
-        if resolved == x86_tool.resolve():
-            return [str(x86_i18n)]
-        if path.name.startswith("libicui18n"):
-            return ["@loader_path/libicuuc.78.dylib", "@loader_path/libicudata.78.dylib"]
-        if path.name.startswith("libicuuc"):
-            return ["@loader_path/libicudata.78.dylib"]
-        return []
-
-    changes: list[list[str]] = []
-
-    def fake_run_quiet(cmd: list[str]) -> subprocess.CompletedProcess[str]:
-        changes.append(cmd)
-        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
-
-    monkeypatch.setattr(package_app, "macho_dependencies", fake_dependencies)
-    monkeypatch.setattr(package_app, "run_quiet", fake_run_quiet)
-    monkeypatch.setattr(package_app, "set_macho_id_if_supported", lambda path: None)
-
-    package_app.vendor_macho_dependencies(app)
-
-    frameworks = app / "Contents" / "Frameworks"
-    assert (frameworks / "libicuuc.78.dylib").is_file()
-    x86_icuuc_bundle = next(frameworks.glob("libicuuc-*.78.dylib"))
-    x86_icudata_bundle = next(frameworks.glob("libicudata-*.78.dylib"))
-    x86_i18n_bundle = next(frameworks.glob("libicui18n-*.78.dylib"))
-
-    assert any(
-        cmd[0:3] == ["install_name_tool", "-change", "@loader_path/libicuuc.78.dylib"]
-        and cmd[3] == f"@loader_path/{x86_icuuc_bundle.name}"
-        and cmd[-1] == str(x86_i18n_bundle)
-        for cmd in changes
-    )
-    assert any(
-        cmd[0:3] == ["install_name_tool", "-change", "@loader_path/libicudata.78.dylib"]
-        and cmd[3] == f"@loader_path/{x86_icudata_bundle.name}"
-        and cmd[-1] == str(x86_icuuc_bundle)
-        for cmd in changes
-    )
-
-
 def test_ad_hoc_codesign_macho_bundle_signs_only_macho_files(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -1252,6 +997,7 @@ def test_package_app_signs_final_bundle_after_native_tools(
     monkeypatch.setattr(package_app, "finalize_python_bundle", lambda resources: calls.append("python-sign"))
     monkeypatch.setattr(package_app, "copy_distribution", lambda resources: calls.append("distribution"))
     monkeypatch.setattr(package_app, "copy_native_tools_layer", lambda app, architectures, use_cache=True: calls.append("native"))
+    monkeypatch.setattr(package_app, "write_package_provenance", lambda *args: None)
     monkeypatch.setattr(package_app, "remove_appledouble_files", lambda app: calls.append("clean"))
     monkeypatch.setattr(package_app, "assert_no_appledouble_files", lambda app: calls.append("assert-clean"))
     monkeypatch.setattr(package_app, "ad_hoc_codesign_app_bundle", lambda app: calls.append("app-sign"))
@@ -1307,6 +1053,7 @@ def test_package_app_result_includes_zip_and_notarization_archive(
     monkeypatch.setattr(package_app, "finalize_python_bundle", lambda resources: None)
     monkeypatch.setattr(package_app, "copy_distribution", lambda resources: None)
     monkeypatch.setattr(package_app, "copy_native_tools_layer", lambda app, architectures, use_cache=True: None)
+    monkeypatch.setattr(package_app, "write_package_provenance", lambda *args: None)
     monkeypatch.setattr(package_app, "remove_appledouble_files", lambda app: None)
     monkeypatch.setattr(package_app, "assert_no_appledouble_files", lambda app: None)
     monkeypatch.setattr(package_app, "ad_hoc_codesign_app_bundle", lambda app: None)
@@ -1533,3 +1280,35 @@ def test_runtime_rejects_unapproved_framework_override(tmp_path, no_cache):
     args = SimpleNamespace(python_runtime_framework=tmp_path, no_cache=no_cache)
     with pytest.raises(RuntimeError, match="overrides are disabled"):
         module.copy_python_runtime(args, tmp_path / "Resources", ("arm64",))
+
+
+def test_signing_metadata_cleanup_preserves_quarantine(monkeypatch, tmp_path):
+    module = load_package_app_module()
+    monkeypatch.setattr(module.sys, "platform", "darwin")
+    calls = []
+    monkeypatch.setattr(module.subprocess, "run", lambda command, **kwargs: calls.append(command))
+    module.remove_signing_metadata(tmp_path)
+    assert calls == [["/usr/bin/xattr", "-dr", name, str(tmp_path)]
+                     for name in ("com.apple.FinderInfo", "com.apple.ResourceFork")]
+
+
+def test_provenance_records_final_files_links_and_zip(tmp_path):
+    import hashlib
+    import json
+    module = load_package_app_module()
+    app = tmp_path / "Test.app"
+    resources = app / "Contents/Resources"
+    resources.mkdir(parents=True)
+    for name in ("native-provenance.json", "native-inputs.json"):
+        (resources / name).write_text("{}")
+    program = app / "Contents/program"
+    program.write_bytes(b"final signed executable")
+    (app / "Contents/link").symlink_to("program")
+    zipped = tmp_path / "Test.app.zip"
+    zipped.write_bytes(b"final archive")
+    receipt = json.loads(module.write_package_provenance(app, zipped, ("arm64",)).read_text())
+    assert receipt["app_files"]["Contents/program"]["sha256"] == hashlib.sha256(program.read_bytes()).hexdigest()
+    assert receipt["app_files"]["Contents/link"] == {"symlink": "program"}
+    assert receipt["zip"]["sha256"] == hashlib.sha256(zipped.read_bytes()).hexdigest()
+    assert receipt["python"]["version"] == "3.13.15"
+    assert receipt["build_pip"]["version"] == "26.2.1"
