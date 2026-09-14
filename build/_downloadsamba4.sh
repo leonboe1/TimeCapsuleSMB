@@ -3,6 +3,7 @@ set -eu
 
 . "$(dirname "$0")/env.sh"
 . "$(dirname "$0")/_patch_helpers.sh"
+. "$(dirname "$0")/_source_lock.sh"
 
 mkdir -p "$OUT" "$SAMBA4_WORK"
 
@@ -23,18 +24,7 @@ mkdir -p "$OUT" "$SAMBA4_WORK"
         /usr/pkg/bin/pkgin -4 -y install python27
     fi
 
-    if [ -d "$SAMBA4_SRC_DIR/.git" ]; then
-        printf 'Refreshing existing git checkout at %s\n' "$SAMBA4_SRC_DIR"
-        git -C "$SAMBA4_SRC_DIR" fetch --depth 1 origin "$SAMBA4_GIT_REF"
-        git -C "$SAMBA4_SRC_DIR" checkout -B "$SAMBA4_GIT_REF" "FETCH_HEAD"
-        git -C "$SAMBA4_SRC_DIR" reset --hard "FETCH_HEAD"
-    elif [ -d "$SAMBA4_SRC_DIR" ]; then
-        printf 'Removing existing non-git Samba source tree at %s\n' "$SAMBA4_SRC_DIR"
-        rm -rf "$SAMBA4_SRC_DIR"
-        git clone --depth 1 --branch "$SAMBA4_GIT_REF" "$SAMBA4_GIT_URL" "$SAMBA4_SRC_DIR"
-    else
-        git clone --depth 1 --branch "$SAMBA4_GIT_REF" "$SAMBA4_GIT_URL" "$SAMBA4_SRC_DIR"
-    fi
+    tc_checkout_pinned_source "$SAMBA4_SRC_DIR" "$SAMBA4_GIT_URL" "$TC_SAMBA4_COMMIT"
 
     # Invariant guard: Samba 4.8.12 already removes "." from Perl @INC here.
     # Keep checking it because waf must not pass cwd into host Perl include

@@ -3,6 +3,7 @@ set -eu
 
 . "$(dirname "$0")/env.sh"
 . "$(dirname "$0")/_patch_helpers.sh"
+. "$(dirname "$0")/_source_lock.sh"
 
 PATCH_DIR="$(CDPATH= cd "$(dirname "$0")/patches/samba4x" && pwd)"
 
@@ -27,28 +28,7 @@ mkdir -p "$OUT" "$SAMBA4X_WORK"
         fi
     done
 
-    if [ -d "$SAMBA4X_SRC_DIR/.git" ]; then
-        printf 'Refreshing existing git checkout at %s\n' "$SAMBA4X_SRC_DIR"
-        git -C "$SAMBA4X_SRC_DIR" fetch --depth 1 origin "$SAMBA4X_GIT_REF"
-        # The downloader applies the appliance patch series in-place, so a
-        # previously prepared Samba tree is expected to be dirty. Reset before
-        # switching refs; otherwise git refuses the checkout and leaves the
-        # build lane pinned to the old source.
-        git -C "$SAMBA4X_SRC_DIR" reset --hard HEAD
-        git -C "$SAMBA4X_SRC_DIR" checkout -B "$SAMBA4X_GIT_REF" "FETCH_HEAD"
-        git -C "$SAMBA4X_SRC_DIR" reset --hard "FETCH_HEAD"
-        # A downstream patch may add a source file. reset --hard removes the
-        # patch's tracked edits but leaves that added file untracked, causing
-        # the next exact git-apply check to fail. This checkout is disposable;
-        # clean only its untracked, non-ignored source files before reapplying.
-        git -C "$SAMBA4X_SRC_DIR" clean -fd
-    elif [ -d "$SAMBA4X_SRC_DIR" ]; then
-        printf 'Removing existing non-git Samba source tree at %s\n' "$SAMBA4X_SRC_DIR"
-        rm -rf "$SAMBA4X_SRC_DIR"
-        git clone --depth 1 --branch "$SAMBA4X_GIT_REF" "$SAMBA4X_GIT_URL" "$SAMBA4X_SRC_DIR"
-    else
-        git clone --depth 1 --branch "$SAMBA4X_GIT_REF" "$SAMBA4X_GIT_URL" "$SAMBA4X_SRC_DIR"
-    fi
+    tc_checkout_pinned_source "$SAMBA4X_SRC_DIR" "$SAMBA4X_GIT_URL" "$TC_SAMBA4X_COMMIT"
 
     # The ordered patch series is grouped by purpose in build/patches/samba4x.
     # Keep comments in that series and in the patch hunks themselves so the

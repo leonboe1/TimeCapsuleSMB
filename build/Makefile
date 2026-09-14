@@ -50,6 +50,7 @@ require-build-tree:
 	for path in \
 		env.sh \
 		_patch_helpers.sh \
+		_source_lock.sh \
 		native/common/network.h \
 		native/mdns.sources \
 		native/nbns.sources \

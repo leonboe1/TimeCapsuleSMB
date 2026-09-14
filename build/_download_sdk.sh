@@ -3,6 +3,7 @@ set -eu
 
 . "$(dirname "$0")/env.sh"
 . "$(dirname "$0")/_patch_helpers.sh"
+. "$(dirname "$0")/_source_lock.sh"
 
 case "$SDK_FAMILY" in
     netbsd4)
@@ -28,18 +29,11 @@ cd "$BUILD_ROOT"
 {
     echo "Starting $BUILD_LABEL download workflow at $(date -u)"
     echo "SDK_FAMILY=$SDK_FAMILY"
-    if [ -d "$SRC/.git" ]; then
-        printf 'Reusing existing git checkout at %s\n' "$SRC"
-        printf 'Refreshing branch %s at %s\n' "$NETBSD_GIT_BRANCH" "$(date -u)"
-        git -C "$SRC" fetch --depth 1 origin "$NETBSD_GIT_BRANCH"
-        git -C "$SRC" checkout -f "$NETBSD_GIT_BRANCH"
-        git -C "$SRC" reset --hard "origin/$NETBSD_GIT_BRANCH"
-        echo "Finished $SRC reset --hard"
-    else
-        rm -rf "$SRC"
-        printf 'Cloning %s branch %s at %s\n' "$NETBSD_GIT_URL" "$NETBSD_GIT_BRANCH" "$(date -u)"
-        git clone --depth 1 --branch "$NETBSD_GIT_BRANCH" "$NETBSD_GIT_URL" "$SRC"
-    fi
+    case "$SDK_FAMILY" in
+        netbsd4) source_commit=$TC_NETBSD4_COMMIT ;;
+        netbsd7) source_commit=$TC_NETBSD7_COMMIT ;;
+    esac
+    tc_checkout_pinned_source "$SRC" "$NETBSD_GIT_URL" "$source_commit"
 
     commands_magic="$SRC/external/bsd/file/dist/magic/magdir/commands"
     if [ "$SDK_FAMILY" = "netbsd7" ] && [ -f "$commands_magic" ]; then

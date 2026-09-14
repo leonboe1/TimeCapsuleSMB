@@ -5,6 +5,7 @@ SAMBA4X_SCRIPT_DIR="$(CDPATH= cd "$(dirname "$0")" && pwd)"
 
 . "$SAMBA4X_SCRIPT_DIR/env.sh"
 . "$SAMBA4X_SCRIPT_DIR/_patch_helpers.sh"
+. "$SAMBA4X_SCRIPT_DIR/_source_lock.sh"
 
 GNUTLS_PATCH_DIR="$SAMBA4X_SCRIPT_DIR/patches/gnutls"
 TOOLDIR="$TOOLS"
@@ -707,14 +708,20 @@ download_samba4x_archive() {
     mkdir -p "$SAMBA4X_BUILD/distfiles"
     path="$SAMBA4X_BUILD/distfiles/$archive"
     if [ -f "$path" ]; then
+        tc_verify_source_archive "$path" || return 1
         printf '%s\n' "$path"
         return 0
     fi
 
-    tmp="$path.tmp.$$"
-    rm -f "$tmp"
-    curl -fL "$url" -o "$tmp"
-    mv "$tmp" "$path"
+    tmp_dir=$(mktemp -d "$SAMBA4X_BUILD/distfiles/.download.XXXXXX") || return 1
+    tmp="$tmp_dir/$archive"
+    if ! curl -fL --proto '=https' --proto-redir '=https' "$url" -o "$tmp" ||
+        ! tc_verify_source_archive "$tmp"; then
+        rm -rf "$tmp_dir"
+        return 1
+    fi
+    mv "$tmp" "$path" || return 1
+    rmdir "$tmp_dir"
     printf '%s\n' "$path"
 }
 
