@@ -37,52 +37,30 @@ class AppleFirmwareTests(unittest.TestCase):
         self.assertEqual(path.parent.name, "device")
         self.assertTrue(path.name.startswith("device-"))
 
-    def test_catalog_cache_write_failure_keeps_existing_catalog(self) -> None:
-        old_catalog = plistlib.dumps({
-            "firmwareUpdates": [
-                {
-                    "productID": "113",
-                    "version": "7.8.1",
-                    "location": "https://example.invalid/old.basebinary",
-                }
-            ]
-        })
-        new_catalog = plistlib.dumps({
-            "firmwareUpdates": [
-                {
-                    "productID": "113",
-                    "version": "7.8.2",
-                    "location": "https://example.invalid/new.basebinary",
-                }
-            ]
-        })
-
+    def test_catalog_uses_reviewed_manifest_despite_poisoned_cache(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             cache_dir = Path(tmp)
-            catalog_path = cache_dir / "version.xml"
-            catalog_path.write_bytes(old_catalog)
+            (cache_dir / "version.xml").write_bytes(plistlib.dumps({"firmwareUpdates": [{"location": "http://attacker.invalid"}]}))
+            with mock.patch("timecapsulesmb.apple_firmware.download_url") as download:
+                entries = load_apple_firmware_catalog(cache_dir=cache_dir)
+            self.assertEqual(len(entries), 110)
+            self.assertTrue(all(entry["location"].startswith("https://apsu.apple.com/") for entry in entries))
+            self.assertTrue(all(len(entry["sha256"]) == 64 for entry in entries))
+            download.assert_not_called()
 
-            with mock.patch("timecapsulesmb.apple_firmware.download_url", return_value=new_catalog):
-                with mock.patch("timecapsulesmb.apple_firmware.os.replace", side_effect=OSError("disk full")):
-                    entries = load_apple_firmware_catalog(cache_dir=cache_dir)
-
-            leftovers = list(cache_dir.glob(".version.xml.*.tmp"))
-            cached_catalog = catalog_path.read_bytes()
-
-        self.assertEqual(entries[0]["version"], "7.8.1")
-        self.assertEqual(cached_catalog, old_catalog)
-        self.assertEqual(leftovers, [])
 
     def test_template_cache_write_failure_does_not_leave_target_or_temp_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             cache_dir = Path(tmp)
             path = cache_dir / "113" / "7.8.1.basebinary"
 
-            with mock.patch("timecapsulesmb.apple_firmware.download_url", return_value=b"template"):
+            import hashlib
+            entry = {"location": "https://apsu.apple.com/7.8.1.basebinary", "productID": "113", "version": "7.8.1", "sizeInBytes": 8, "sha256": hashlib.sha256(b"template").hexdigest()}
+            with mock.patch("timecapsulesmb.apple_firmware.pinned_firmware_entries", return_value=[entry]), mock.patch("timecapsulesmb.apple_firmware.download_url", return_value=b"template"):
                 with mock.patch("timecapsulesmb.apple_firmware.os.replace", side_effect=OSError("disk full")):
                     with self.assertRaises(FlashAnalysisError) as raised:
                         download_firmware_template_to_cache(
-                            url="https://example.invalid/7.8.1.basebinary",
+                            url="https://apsu.apple.com/7.8.1.basebinary",
                             path=path,
                             product_id="113",
                             version="7.8.1",

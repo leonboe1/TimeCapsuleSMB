@@ -245,11 +245,16 @@ def find_footer(data: bytes) -> FooterInfo:
     return matches[0]
 
 
+MAX_GZIP_MEMBER_BYTES = 64 * 1024 * 1024
+
+
 def _decompress_gzip_member(data: bytes, offset: int) -> GzipMemberInfo | None:
     decompressor = zlib.decompressobj(16 + zlib.MAX_WBITS)
     remaining = memoryview(data)[offset:]
     try:
-        decompressed = decompressor.decompress(remaining) + decompressor.flush()
+        decompressed = decompressor.decompress(remaining, MAX_GZIP_MEMBER_BYTES + 1)
+        if len(decompressed) > MAX_GZIP_MEMBER_BYTES or not decompressor.eof:
+            return None
     except zlib.error:
         return None
     consumed = len(remaining) - len(decompressor.unused_data)

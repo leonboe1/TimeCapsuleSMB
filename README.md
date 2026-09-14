@@ -37,6 +37,12 @@ For the python setup, you need:
 - `smbclient` installed locally for `doctor`
 - Homebrew installed for macOS users
 
+Firmware restore templates are pinned to the 110 Apple catalog images retrieved
+over HTTPS on 2026-09-14. Downloads use only `apsu.apple.com`, reject redirects,
+and verify the reviewed SHA256 and size. Cached and explicitly supplied local
+templates receive the same checks. Unknown images require a reviewed manifest
+update before they can be used.
+
 The unauthenticated rsync daemon and its bundled executables have been removed.
 Upgrading stops and removes the old daemon. Requests to enable it fail explicitly;
 use authenticated SMB for file access.

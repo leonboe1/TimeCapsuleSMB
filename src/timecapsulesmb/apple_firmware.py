@@ -3,18 +3,20 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 import os
-import plistlib
+import json
+from importlib import resources
 import re
 import tempfile
 from pathlib import Path
 from urllib.parse import urlparse
-from urllib.request import urlopen
+from urllib.request import HTTPRedirectHandler, build_opener
 
 from timecapsulesmb.core.paths import default_user_data_dir, safe_path_part
 from timecapsulesmb.flash import FlashAnalysisError, sha256_hex
 
 
 APPLE_FIRMWARE_CATALOG_URL = "https://apsu.apple.com/version.xml"
+MAX_FIRMWARE_BYTES = 32 * 1024 * 1024
 FIRMWARE_KEY_ISSUE_URL = "https://github.com/jamesyc/TimeCapsuleSMB/issues"
 UNSUPPORTED_FIRMWARE_KEY_MESSAGE = (
     "We do not have firmware encryption keys for this AirPort firmware product yet. "
@@ -49,9 +51,45 @@ def normalize_syap(value: str | int | None) -> str:
         raise FlashAnalysisError(f"cannot select firmware template because syAP is invalid: {text!r}") from exc
 
 
+def trusted_apple_url(url: str) -> str:
+    parsed = urlparse(url)
+    if (parsed.scheme not in {"http", "https"} or parsed.hostname != "apsu.apple.com"
+            or parsed.port not in (None, 443) or parsed.username or parsed.password
+            or parsed.query or parsed.fragment):
+        raise FlashAnalysisError("firmware URL must use the approved Apple origin")
+    return parsed._replace(scheme="https").geturl()
+
+
+class _NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise FlashAnalysisError("firmware download redirects are not permitted")
+
+
 def download_url(url: str, *, timeout: int = 60) -> bytes:
-    with urlopen(url, timeout=timeout) as response:
-        return response.read()
+    url = trusted_apple_url(url)
+    with build_opener(_NoRedirect).open(url, timeout=timeout) as response:
+        data = response.read(MAX_FIRMWARE_BYTES + 1)
+    if len(data) > MAX_FIRMWARE_BYTES:
+        raise FlashAnalysisError("firmware download exceeds the size limit")
+    return data
+
+
+def pinned_firmware_entries() -> list[dict[str, object]]:
+    raw = resources.files("timecapsulesmb.assets").joinpath("apple-firmware-manifest.json").read_text()
+    return json.loads(raw)["firmwareUpdates"]
+
+
+def _approved_entry(product_id: str, version: str, url: str) -> dict[str, object]:
+    url = trusted_apple_url(url)
+    for entry in pinned_firmware_entries():
+        if entry["productID"] == product_id and entry["version"] == version and entry["location"] == url:
+            return entry
+    raise FlashAnalysisError("firmware is not in the reviewed Apple firmware manifest")
+
+
+def _verify_template(data: bytes, entry: dict[str, object]) -> None:
+    if len(data) != entry["sizeInBytes"] or sha256_hex(data) != entry["sha256"]:
+        raise FlashAnalysisError("Apple firmware template checksum mismatch")
 
 
 def _atomic_write_bytes(path: Path, data: bytes) -> None:
@@ -80,24 +118,9 @@ def _atomic_write_bytes(path: Path, data: bytes) -> None:
 
 
 def load_apple_firmware_catalog(*, cache_dir: Path) -> list[dict[str, object]]:
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    catalog_path = cache_dir / "version.xml"
-    try:
-        catalog_data = download_url(APPLE_FIRMWARE_CATALOG_URL)
-        _atomic_write_bytes(catalog_path, catalog_data)
-    except Exception as exc:
-        if not catalog_path.exists():
-            raise FlashAnalysisError(f"failed to download Apple firmware catalog: {exc}") from exc
-        catalog_data = catalog_path.read_bytes()
-
-    try:
-        catalog = plistlib.loads(catalog_data)
-    except Exception as exc:
-        raise FlashAnalysisError("failed to parse Apple firmware catalog") from exc
-    updates = catalog.get("firmwareUpdates") if isinstance(catalog, dict) else None
-    if not isinstance(updates, list):
-        raise FlashAnalysisError("Apple firmware catalog did not contain firmwareUpdates")
-    return [entry for entry in updates if isinstance(entry, dict)]
+    # Cached or newly downloaded catalogs cannot add trusted firmware hashes.
+    # Updating this manifest is an explicit reviewed maintenance operation.
+    return pinned_firmware_entries()
 
 
 def firmware_template_cache_path(*, cache_dir: Path, product_id: str, version: str, url: str) -> Path:
@@ -115,12 +138,14 @@ def read_cached_or_download_template(entry: dict[str, object], *, cache_dir: Pat
     url = str(entry.get("location") or "")
     if not product_id or not version or not url:
         raise FlashAnalysisError("Apple firmware catalog entry is missing productID, version, or location")
-    expected_size_raw = entry.get("sizeInBytes")
-    expected_size = expected_size_raw if isinstance(expected_size_raw, int) else None
+    entry = _approved_entry(product_id, version, url)
+    url = str(entry["location"])
+    expected_size = int(entry["sizeInBytes"])
     path = firmware_template_cache_path(cache_dir=cache_dir, product_id=product_id, version=version, url=url)
     if path.exists():
-        data = path.read_bytes()
-        if expected_size is None or len(data) == expected_size:
+        with path.open("rb") as cached:
+            data = cached.read(MAX_FIRMWARE_BYTES + 1)
+        if len(data) == expected_size and sha256_hex(data) == entry["sha256"]:
             return FirmwareTemplateCandidate(
                 data=data,
                 source=url,
@@ -148,6 +173,9 @@ def download_firmware_template_to_cache(
     version: str,
     expected_size: int | None,
 ) -> FirmwareTemplateCandidate:
+    entry = _approved_entry(product_id, version, url)
+    url = str(entry["location"])
+    expected_size = int(entry["sizeInBytes"])
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
         data = download_url(url, timeout=120)
@@ -158,6 +186,7 @@ def download_firmware_template_to_cache(
             f"downloaded Apple firmware template size mismatch for {url}: "
             f"got {len(data)}, expected {expected_size}"
         )
+    _verify_template(data, entry)
     try:
         _atomic_write_bytes(path, data)
     except OSError as exc:
@@ -216,9 +245,17 @@ def resolve_firmware_template_candidates(
     if firmware_template is not None:
         path = firmware_template.expanduser().resolve()
         try:
-            data = path.read_bytes()
+            with path.open("rb") as local:
+                data = local.read(MAX_FIRMWARE_BYTES + 1)
         except OSError as exc:
             raise FlashAnalysisError(f"failed to read firmware template {path}: {exc}") from exc
+        matching = [entry for entry in pinned_firmware_entries()
+                    if entry["productID"] == normalized_syap
+                    and (firmware_version is None or entry["version"] == firmware_version)
+                    and entry["sha256"] == sha256_hex(data)]
+        if not matching:
+            raise FlashAnalysisError("local firmware template is not a reviewed image for this device")
+        _verify_template(data, matching[0])
         yield FirmwareTemplateCandidate(
             data=data,
             source=str(path),

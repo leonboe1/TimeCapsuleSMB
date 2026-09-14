@@ -1,0 +1,899 @@
+{
+  "retrieved": "2026-09-14",
+  "catalog_sha256": "0f5733254c8a245f254b57e9f6f23abbc84ee79bde0f62212ccfcdd8b733c5ee",
+  "firmwareUpdates": [
+    {
+      "location": "https://apsu.apple.com/data/120/091-55931-20190530-b543691f-bb62-4017-96ca-288e4b0c8207/7.9.1.basebinary",
+      "productID": "120",
+      "version": "7.9.1",
+      "sourceVersion": "79100.2",
+      "sizeInBytes": 7827148,
+      "newest": true,
+      "sha256": "b6eb7068ef890ba1cae8cfe17a54be3811b77fe5eb918f3d9fda23b8ff7841d7"
+    },
+    {
+      "location": "https://apsu.apple.com/data/120/091-04720-20171211-347E5892-DC1A-11E7-ADA3-DA639FB6B499/7.7.9.basebinary",
+      "productID": "120",
+      "version": "7.7.9",
+      "sourceVersion": "77900.2",
+      "sizeInBytes": 7827672,
+      "sha256": "3256ed3187cf064d66f28a7c9b2b0afd31e44a39e1f85e2fb2da0be9fb0584e3"
+    },
+    {
+      "location": "https://apsu.apple.com/data/120/031-75502-20161220-D4168652-C64C-11E6-89F1-2360480386D3/7.7.8.basebinary",
+      "productID": "120",
+      "version": "7.7.8",
+      "sourceVersion": "77800.1",
+      "sizeInBytes": 7826088,
+      "sha256": "268aa63e24cd81d6a3c94f55f2c4332085e13ee5dfff5833e998048df940c759"
+    },
+    {
+      "location": "https://apsu.apple.com/data/120/031-45987-20160525-920B826C-2138-11E6-90EC-3E535529DBDF/7.7.7.basebinary",
+      "productID": "120",
+      "version": "7.7.7",
+      "sourceVersion": "77700.6",
+      "sizeInBytes": 7825556,
+      "sha256": "c9c8275e0d9682208fb7a9335d3c2b92bf7d733b3989992c92cd438af4b49b4a"
+    },
+    {
+      "location": "https://apsu.apple.com/data/120/031-01138.20140418.BbHph/7.7.3.basebinary",
+      "productID": "120",
+      "version": "7.7.3",
+      "sourceVersion": "77300.1",
+      "sizeInBytes": 7816576,
+      "sha256": "e63c017973c545241b220764e27fb19678e28a99f5cf210df9a9401d50c02cd4"
+    },
+    {
+      "location": "https://apsu.apple.com/data/119/091-55932-20190530-21a633d9-c01c-4d12-86ee-fa3fdd47d9bc/7.9.1.basebinary",
+      "productID": "119",
+      "version": "7.9.1",
+      "sourceVersion": "79100.2",
+      "sizeInBytes": 7893428,
+      "newest": true,
+      "sha256": "6783758c0d48ec533d209dbcf97dac7fde549165c4953a2e9005bf89a51e5639"
+    },
+    {
+      "location": "https://apsu.apple.com/data/119/091-04738-20171211-3476F318-DC1A-11E7-BB49-D8639FB6B499/7.7.9.basebinary",
+      "productID": "119",
+      "version": "7.7.9",
+      "sourceVersion": "77900.2",
+      "sizeInBytes": 7893020,
+      "sha256": "afd5ca534f57382b63e825e4499f7e2429e4df0c627a08b93321d01d35138099"
+    },
+    {
+      "location": "https://apsu.apple.com/data/119/031-75503-20161220-D417E56A-C64C-11E6-A679-2460480386D3/7.7.8.basebinary",
+      "productID": "119",
+      "version": "7.7.8",
+      "sourceVersion": "77800.1",
+      "sizeInBytes": 7891744,
+      "sha256": "1ffc186fcce9d7cff869c75d3eead0a9d2ea59ef4aa84c87a44c4c6a846d03a5"
+    },
+    {
+      "location": "https://apsu.apple.com/data/119/031-45984-20160525-920F19D6-2138-11E6-BEF6-3D535529DBDF/7.7.7.basebinary",
+      "productID": "119",
+      "version": "7.7.7",
+      "sourceVersion": "77700.6",
+      "sizeInBytes": 7892120,
+      "sha256": "ec00b2e3f2538771c51e19f7a1782e6fb538e81b76654feecae599485260e78e"
+    },
+    {
+      "location": "https://apsu.apple.com/data/119/031-01135.20140418.Lfrf4/7.7.3.basebinary",
+      "productID": "119",
+      "version": "7.7.3",
+      "sourceVersion": "77300.1",
+      "sizeInBytes": 7883160,
+      "sha256": "6b5fc899b418567979f41ec1810c2fcd5bba48fc82a1eaa5dd4743cde92acd5e"
+    },
+    {
+      "location": "https://apsu.apple.com/data/117/091-56895-20190619-8a7253a6-3612-41d5-8383-dc9bb452220f/7.8.1.basebinary",
+      "productID": "117",
+      "version": "7.8.1",
+      "sourceVersion": "78100.3",
+      "sizeInBytes": 6605988,
+      "newest": true,
+      "sha256": "e37487d160243e635694eaf3af48a16e43f59d1c0cd1d957d555cbc28bde1be7"
+    },
+    {
+      "location": "https://apsu.apple.com/data/117/091-02765-20171211-3479930C-DC1A-11E7-A741-D9639FB6B499/7.6.9.basebinary",
+      "productID": "117",
+      "version": "7.6.9",
+      "sourceVersion": "76900.11",
+      "sizeInBytes": 6605840,
+      "sha256": "a8e096237b8f0577232f29a66fcdc730db8d06bc583b54a926eab18934ff63df"
+    },
+    {
+      "location": "https://apsu.apple.com/data/117/031-91649-20161220-D41E2416-C64C-11E6-9A09-2060480386D3/7.6.8.basebinary",
+      "productID": "117",
+      "version": "7.6.8",
+      "sourceVersion": "76800.1",
+      "sizeInBytes": 6609872,
+      "sha256": "8aa9e1ea786d4213175cc6ded74e2a39c5eb8f60ab6c1c09f05a5e13805370da"
+    },
+    {
+      "location": "https://apsu.apple.com/data/117/031-45951-20160525-920D3918-2138-11E6-853E-3C535529DBDF/7.6.7.basebinary",
+      "productID": "117",
+      "version": "7.6.7",
+      "sourceVersion": "76700.5",
+      "sizeInBytes": 6609952,
+      "sha256": "23b826ed4afe377182b49d20e4180da29ee166bdd962e6d2600f87fa86e1855f"
+    },
+    {
+      "location": "https://apsu.apple.com/data/117/041-9807.20130814.S1Mp4/7.6.4.basebinary",
+      "productID": "117",
+      "version": "7.6.4",
+      "sourceVersion": "76400.10",
+      "sizeInBytes": 6600996,
+      "sha256": "5f76ee87fc2986aa1351b31be1ce825dd19b87d81ddcd0a6ae69f5eec1246bfd"
+    },
+    {
+      "location": "https://apsu.apple.com/data/117/041-9694.20130207.Dr0pg/7.6.3.basebinary",
+      "productID": "117",
+      "version": "7.6.3",
+      "sourceVersion": "76300.7",
+      "sizeInBytes": 6601856,
+      "sha256": "510417ffeb368d412452be3cbef56f4f6d87a2bb00645101c8ee6875d6d54a3e"
+    },
+    {
+      "location": "https://apsu.apple.com/data/117/041-3396.20120130.OpvuO/7.6.1.basebinary",
+      "productID": "117",
+      "version": "7.6.1",
+      "sourceVersion": "76100.4",
+      "sizeInBytes": 6549800,
+      "sha256": "fc49ecd3dc8b8f4b4ffd835311aa1f98147e6dc94a28f5d327bc15e636507d02"
+    },
+    {
+      "location": "https://apsu.apple.com/data/117/041-3382.20111110.RVred/7.6.basebinary",
+      "productID": "117",
+      "version": "7.6",
+      "sourceVersion": "76000.14",
+      "sizeInBytes": 6567844,
+      "sha256": "6ebbc70437c3483c986011f0a4a4f437c9e1ba7ef7aaf43769a4690d7e475f4f"
+    },
+    {
+      "location": "https://apsu.apple.com/data/117/041-1797.20111110.3Tyhg/7.5.2.basebinary",
+      "productID": "117",
+      "version": "7.5.2",
+      "sourceVersion": "75200.32",
+      "sizeInBytes": 6476392,
+      "sha256": "d868a0f2bb2de0211b5c30c3b79a265a51ab37754b819d0bde1d14be5441c0be"
+    },
+    {
+      "location": "https://apsu.apple.com/data/116/091-56886-20190619-de6bd737-be45-49c8-bd42-adf31ae2567e/7.8.1.basebinary",
+      "productID": "116",
+      "version": "7.8.1",
+      "sourceVersion": "78100.3",
+      "sizeInBytes": 6657876,
+      "newest": true,
+      "sha256": "897f04bdf2104597a2bfb0a9503f1d538e34be02a831cf41c1dd250ce67aad0d"
+    },
+    {
+      "location": "https://apsu.apple.com/data/116/091-02763-20171211-347C124E-DC1A-11E7-9EE1-D7639FB6B499/7.6.9.basebinary",
+      "productID": "116",
+      "version": "7.6.9",
+      "sourceVersion": "76900.11",
+      "sizeInBytes": 6657796,
+      "sha256": "c81eb0e50e0ea75a8ec8cff247d448dec304fb5733f87d8325a5a48b8116572d"
+    },
+    {
+      "location": "https://apsu.apple.com/data/116/031-91655-20161220-D41B1FD2-C64C-11E6-A77B-1A60480386D3/7.6.8.basebinary",
+      "productID": "116",
+      "version": "7.6.8",
+      "sourceVersion": "76800.1",
+      "sizeInBytes": 6661424,
+      "sha256": "e363562ff804b7cd04614198268a22ea1c24e90ccfe902320dfcc1a6dc8b0144"
+    },
+    {
+      "location": "https://apsu.apple.com/data/116/031-45958-20160525-920D7F2C-2138-11E6-A155-3A535529DBDF/7.6.7.basebinary",
+      "productID": "116",
+      "version": "7.6.7",
+      "sourceVersion": "76700.5",
+      "sizeInBytes": 6661468,
+      "sha256": "587f0e2bf62779891d896e8588e94eb7966be84fbd4e749d46d04b6b6bbf2b75"
+    },
+    {
+      "location": "https://apsu.apple.com/data/116/041-9812.20130814.Her34/7.6.4.basebinary",
+      "productID": "116",
+      "version": "7.6.4",
+      "sourceVersion": "76400.10",
+      "sizeInBytes": 6652548,
+      "sha256": "0391cb02cd46510bcae886351d6c4a6b90c704a746cf757d1f643acf733d183d"
+    },
+    {
+      "location": "https://apsu.apple.com/data/116/041-9695.20130207.PPlrf/7.6.3.basebinary",
+      "productID": "116",
+      "version": "7.6.3",
+      "sourceVersion": "76300.7",
+      "sizeInBytes": 6653612,
+      "sha256": "acd6d884400a3f902d2a298f45235cf0de0f07283fe81906094742cf5a01c5c7"
+    },
+    {
+      "location": "https://apsu.apple.com/data/116/041-3404.20120130.Kineo/7.6.1.basebinary",
+      "productID": "116",
+      "version": "7.6.1",
+      "sourceVersion": "76100.4",
+      "sizeInBytes": 6600952,
+      "sha256": "56e249218af42b39700cb4ae7d32ffe070572e50b8ff5587c72c4bf267e01439"
+    },
+    {
+      "location": "https://apsu.apple.com/data/116/041-3385.20111110.MypaD/7.6.basebinary",
+      "productID": "116",
+      "version": "7.6",
+      "sourceVersion": "76000.14",
+      "sizeInBytes": 6618260,
+      "sha256": "b7de2938f087d00d93101e1c8e4bd83c5537a5176b40e8d09a98156bea6a47ee"
+    },
+    {
+      "location": "https://apsu.apple.com/data/116/041-1799.20111110.zupud/7.5.2.basebinary",
+      "productID": "116",
+      "version": "7.5.2",
+      "sourceVersion": "75200.32",
+      "sizeInBytes": 6527240,
+      "sha256": "6591631f28f150b4c20da5e7f323e094079d9164670bc47a60e0d3f9a32c6b25"
+    },
+    {
+      "location": "https://apsu.apple.com/data/115/041-48470-20190619-3ce2e81d-ac38-447e-8ca3-fdb3a4a09b91/7.8.1.basebinary",
+      "productID": "115",
+      "version": "7.8.1",
+      "sourceVersion": "78100.3",
+      "sizeInBytes": 6098300,
+      "newest": true,
+      "sha256": "56707780d126396ec5c217cafcb40f61850c94087f12693085fdf81ee9ac4eb6"
+    },
+    {
+      "location": "https://apsu.apple.com/data/115/091-70329-20180829-036E80BA-A640-11E8-B33B-F58F722F5B72/7.8.basebinary",
+      "productID": "115",
+      "version": "7.8",
+      "sourceVersion": "78000.12",
+      "sizeInBytes": 6098036,
+      "sha256": "fbdd74efd4032847b2f18f1fc11a1a07b4d7f10a64f2e985656abdc50d0e5da1"
+    },
+    {
+      "location": "https://apsu.apple.com/data/115/091-02742-20171211-347DE768-DC1A-11E7-B7FE-D6639FB6B499/7.6.9.basebinary",
+      "productID": "115",
+      "version": "7.6.9",
+      "sourceVersion": "76900.11",
+      "sizeInBytes": 5679928,
+      "sha256": "0e55b8fb44c78085736bb7327fd085a332b6d8f006ca79c02a4caf3294f75f94"
+    },
+    {
+      "location": "https://apsu.apple.com/data/115/031-91658-20161220-D4176B3A-C64C-11E6-A04E-1860480386D3/7.6.8.basebinary",
+      "productID": "115",
+      "version": "7.6.8",
+      "sourceVersion": "76800.1",
+      "sizeInBytes": 5682216,
+      "sha256": "ed0e36a51bab3225cc6e2c2761e63d5882cc70b38393030633df214d5d48157e"
+    },
+    {
+      "location": "https://apsu.apple.com/data/115/031-45969-20160525-920B1412-2138-11E6-A44F-39535529DBDF/7.6.7.basebinary",
+      "productID": "115",
+      "version": "7.6.7",
+      "sourceVersion": "76700.5",
+      "sizeInBytes": 5682164,
+      "sha256": "2579c959477c7443d37ccead9724e02d228163b656715189f034462d4a6aebcd"
+    },
+    {
+      "location": "https://apsu.apple.com/data/115/041-9815.20130814.1Rver/7.6.4.basebinary",
+      "productID": "115",
+      "version": "7.6.4",
+      "sourceVersion": "76400.10",
+      "sizeInBytes": 5674968,
+      "sha256": "79819b6c7411a7217bbe8796b908bfa2001d819c9cd5957683f0284fadf564c7"
+    },
+    {
+      "location": "https://apsu.apple.com/data/115/041-9696.20130207.Ch5g6/7.6.3.basebinary",
+      "productID": "115",
+      "version": "7.6.3",
+      "sourceVersion": "76300.7",
+      "sizeInBytes": 5674344,
+      "sha256": "ae9fab14d69597466bb115d31c4682e260f59d94f95218d9fefb4cc67ec8f7da"
+    },
+    {
+      "location": "https://apsu.apple.com/data/115/041-0311.20130207.aaWs/7.6.2.basebinary",
+      "productID": "115",
+      "version": "7.6.2",
+      "sourceVersion": "76200.16",
+      "sizeInBytes": 5627396,
+      "sha256": "995c630b774c0d2f1eabe50f13188068bfe7eb73bd2d1af0411ec07b72ed3e57"
+    },
+    {
+      "location": "https://apsu.apple.com/data/114/091-56888-20190619-fca89ece-6985-4ff5-9d8f-3cc4cf7c9e90/7.8.1.basebinary",
+      "productID": "114",
+      "version": "7.8.1",
+      "sourceVersion": "78100.3",
+      "sizeInBytes": 6414372,
+      "newest": true,
+      "sha256": "d29f0f3ca541aba05795033a7f3866c3bfb556e0abcdcfe7c0b55ce570fb4dff"
+    },
+    {
+      "location": "https://apsu.apple.com/data/114/091-02749-20171211-347AD744-DC1A-11E7-A16A-D4639FB6B499/7.6.9.basebinary",
+      "productID": "114",
+      "version": "7.6.9",
+      "sourceVersion": "76900.11",
+      "sizeInBytes": 6414056,
+      "sha256": "282d23ecf367fa2a555c408c3afef9beab2ff6911f164054157b9ecac0b61da2"
+    },
+    {
+      "location": "https://apsu.apple.com/data/114/031-91648-20161220-D41BE55C-C64C-11E6-9B79-2160480386D3/7.6.8.basebinary",
+      "productID": "114",
+      "version": "7.6.8",
+      "sourceVersion": "76800.1",
+      "sizeInBytes": 6417856,
+      "sha256": "275099c54389789e55dd30561ee5db0878f8050dee783a44823efbb900854f6e"
+    },
+    {
+      "location": "https://apsu.apple.com/data/114/031-45950-20160525-9210B9A8-2138-11E6-855E-36535529DBDF/7.6.7.basebinary",
+      "productID": "114",
+      "version": "7.6.7",
+      "sourceVersion": "76700.5",
+      "sizeInBytes": 6417836,
+      "sha256": "97ad7958f845e3b76b362d75005c486614918ae2a8eb72c35b837f95c06211ea"
+    },
+    {
+      "location": "https://apsu.apple.com/data/114/041-9804.20130814.Lan3e/7.6.4.basebinary",
+      "productID": "114",
+      "version": "7.6.4",
+      "sourceVersion": "76400.10",
+      "sizeInBytes": 6406868,
+      "sha256": "bc5a10395c619d3ae9af002da3a41ac1c4342f4303ab1b8f153dae0e7b3a70a3"
+    },
+    {
+      "location": "https://apsu.apple.com/data/114/041-9692.20130207.Nmbrs/7.6.3.basebinary",
+      "productID": "114",
+      "version": "7.6.3",
+      "sourceVersion": "76300.7",
+      "sizeInBytes": 6406356,
+      "sha256": "f8a26fcf21aa419c43b0e55d5bc037037d5e2c1e4dbba4ee58b98f5074e46f70"
+    },
+    {
+      "location": "https://apsu.apple.com/data/114/041-3395.20120130.Ka1Br/7.6.1.basebinary",
+      "productID": "114",
+      "version": "7.6.1",
+      "sourceVersion": "76100.4",
+      "sizeInBytes": 6364116,
+      "sha256": "211370d06c3d56c4f6c3c74a30226f002311c829b0a60b7f0337b0723e619c40"
+    },
+    {
+      "location": "https://apsu.apple.com/data/114/041-3381.20111110.Xtzde/7.6.basebinary",
+      "productID": "114",
+      "version": "7.6",
+      "sourceVersion": "76000.14",
+      "sizeInBytes": 6379176,
+      "sha256": "86cf0b953b3a6922842f6f5790652389b51c3f763f46d7cede35d8b4d286a032"
+    },
+    {
+      "location": "https://apsu.apple.com/data/114/041-0498.20111110.Josdj/7.5.2.basebinary",
+      "productID": "114",
+      "version": "7.5.2",
+      "sourceVersion": "75200.16",
+      "sizeInBytes": 6321060,
+      "sha256": "be1fe47aa2ac923d292f56a8f9069ddd7ad43e16ca33fa1491d8e055d1c65e74"
+    },
+    {
+      "location": "https://apsu.apple.com/data/113/091-56894-20190619-d2c2bcad-c392-4e77-80c1-c7f601b7f47c/7.8.1.basebinary",
+      "productID": "113",
+      "version": "7.8.1",
+      "sourceVersion": "78100.3",
+      "sizeInBytes": 6463852,
+      "newest": true,
+      "sha256": "549b6f37b437c496b56fa90b4a1ce41b01bb24f168f3e825328de40ad441c576"
+    },
+    {
+      "location": "https://apsu.apple.com/data/113/091-02758-20171211-34773044-DC1A-11E7-A0D9-D2639FB6B499/7.6.9.basebinary",
+      "productID": "113",
+      "version": "7.6.9",
+      "sourceVersion": "76900.11",
+      "sizeInBytes": 6463596,
+      "sha256": "6b4563f8c4a6be28d3f3a2ccd249fbcc60a6b56a11319259a1f68f70f32d7703"
+    },
+    {
+      "location": "https://apsu.apple.com/data/113/031-91653-20161220-D41780DE-C64C-11E6-B558-1B60480386D3/7.6.8.basebinary",
+      "productID": "113",
+      "version": "7.6.8",
+      "sourceVersion": "76800.1",
+      "sizeInBytes": 6469044,
+      "sha256": "2868ab4cf91d492a8466af54abcb50c7da52559db00dbd8b4d2a682e875056ad"
+    },
+    {
+      "location": "https://apsu.apple.com/data/113/031-45957-20160525-920C279E-2138-11E6-933B-34535529DBDF/7.6.7.basebinary",
+      "productID": "113",
+      "version": "7.6.7",
+      "sourceVersion": "76700.5",
+      "sizeInBytes": 6469008,
+      "sha256": "f305632362d7e27bf1645e6fc473327c52dcab1cefcf2ffee7a841c684ddb32a"
+    },
+    {
+      "location": "https://apsu.apple.com/data/113/041-9809.20130814.Llkt5/7.6.4.basebinary",
+      "productID": "113",
+      "version": "7.6.4",
+      "sourceVersion": "76400.10",
+      "sizeInBytes": 6457600,
+      "sha256": "89839c93db0477f812b170eb7830535825b899fa99d84a0b0a831897e3263d62"
+    },
+    {
+      "location": "https://apsu.apple.com/data/113/041-9693.20130207.Lt56y/7.6.3.basebinary",
+      "productID": "113",
+      "version": "7.6.3",
+      "sourceVersion": "76300.7",
+      "sizeInBytes": 6456528,
+      "sha256": "b3cac90258889ac5871d89e5d48badeff5ea2e8cbdbf8239743f09f51eb5ce74"
+    },
+    {
+      "location": "https://apsu.apple.com/data/113/041-3398.20120130.Jom1K/7.6.1.basebinary",
+      "productID": "113",
+      "version": "7.6.1",
+      "sourceVersion": "76100.4",
+      "sizeInBytes": 6414064,
+      "sha256": "3f37fbac9152bb4ab581e769cbf18a11e803e99c24749042ac28e784189a6e94"
+    },
+    {
+      "location": "https://apsu.apple.com/data/113/041-3384.20111110.9iyt5/7.6.basebinary",
+      "productID": "113",
+      "version": "7.6",
+      "sourceVersion": "76000.14",
+      "sizeInBytes": 6428660,
+      "sha256": "ce9fb39c1eb442ed6ce1b7649bf53b8425fd720abfccb439bdbf7413c391e268"
+    },
+    {
+      "location": "https://apsu.apple.com/data/113/041-0500.20111110.Jmllr/7.5.2.basebinary",
+      "productID": "113",
+      "version": "7.5.2",
+      "sourceVersion": "75200.16",
+      "sizeInBytes": 6369208,
+      "sha256": "6a4026d354739043fa1bfd1865cec036ec0dba83673fedd45fd5e89ff82bfea5"
+    },
+    {
+      "location": "https://apsu.apple.com/data/109/091-56887-20190619-f3ca7710-21d4-4837-843c-928c39d53171/7.8.1.basebinary",
+      "productID": "109",
+      "version": "7.8.1",
+      "sourceVersion": "78100.3",
+      "sizeInBytes": 6351988,
+      "newest": true,
+      "sha256": "d576d0beeb9b7d8a73db6afae6325ac0f0650498d7098afc3d2c31136ef6a4c0"
+    },
+    {
+      "location": "https://apsu.apple.com/data/109/091-02754-20171211-3475CC40-DC1A-11E7-9978-D0639FB6B499/7.6.9.basebinary",
+      "productID": "109",
+      "version": "7.6.9",
+      "sourceVersion": "76900.11",
+      "sizeInBytes": 6351576,
+      "sha256": "6dce0f3727100edda74af0025e5e5b57c4b9d3dd51fa16c3a9a1d3e850d03067"
+    },
+    {
+      "location": "https://apsu.apple.com/data/109/031-91652-20161220-D4134D7A-C64C-11E6-B86F-1D60480386D3/7.6.8.basebinary",
+      "productID": "109",
+      "version": "7.6.8",
+      "sourceVersion": "76800.1",
+      "sizeInBytes": 6354740,
+      "sha256": "4deedb64694a00e63d816e7cd539f73ad5c115b716e0a969dd5e2c218c468dc3"
+    },
+    {
+      "location": "https://apsu.apple.com/data/109/031-45956-20160525-920DB870-2138-11E6-BA1E-32535529DBDF/7.6.7.basebinary",
+      "productID": "109",
+      "version": "7.6.7",
+      "sourceVersion": "76700.5",
+      "sizeInBytes": 6354780,
+      "sha256": "0299cc38368430d12e7168ba39003fe16bd69db5c422416895007c8f3eee6d12"
+    },
+    {
+      "location": "https://apsu.apple.com/data/109/041-9813.20130814.Cew23/7.6.4.basebinary",
+      "productID": "109",
+      "version": "7.6.4",
+      "sourceVersion": "76400.10",
+      "sizeInBytes": 6341192,
+      "sha256": "a1cd8758a8e3279b9f44267cbeb2b6b46435d3958ae6d7384ffc92efbcda4355"
+    },
+    {
+      "location": "https://apsu.apple.com/data/109/041-9691.20130207.Wki6g/7.6.3.basebinary",
+      "productID": "109",
+      "version": "7.6.3",
+      "sourceVersion": "76300.7",
+      "sizeInBytes": 6341280,
+      "sha256": "d4adce462d7d73390f5c9be63338b62031c39ef67e43520dce7499698b9eff70"
+    },
+    {
+      "location": "https://apsu.apple.com/data/109/041-3399.20120130.V1Da1/7.6.1.basebinary",
+      "productID": "109",
+      "version": "7.6.1",
+      "sourceVersion": "76100.4",
+      "sizeInBytes": 6288476,
+      "sha256": "2774ab20d454ed4bb9812ba0ccfbf47a9da15edc1bc58fd8832611594a512f6d"
+    },
+    {
+      "location": "https://apsu.apple.com/data/109/041-3386.20111110.Rvj65/7.6.basebinary",
+      "productID": "109",
+      "version": "7.6",
+      "sourceVersion": "76000.14",
+      "sizeInBytes": 6278724,
+      "sha256": "371b9e10fae32172438550e9b4648d609cdb297a8d38310329d38a64c541ff5a"
+    },
+    {
+      "location": "https://apsu.apple.com/data/109/061-6991.20101216.Zsw2E/7.5.2.basebinary",
+      "productID": "109",
+      "version": "7.5.2",
+      "sourceVersion": "75200.14",
+      "sizeInBytes": 6206356,
+      "sha256": "440f319eb826270f8cfbc0b32b0f5dd11418435d6beccea1970fda6bd2e2bbd0"
+    },
+    {
+      "location": "https://apsu.apple.com/data/108/091-56884-20190619-3c178388-1167-46b6-a3c3-ff74f249c46a/7.8.1.basebinary",
+      "productID": "108",
+      "version": "7.8.1",
+      "sourceVersion": "78100.3",
+      "sizeInBytes": 6297580,
+      "newest": true,
+      "sha256": "8a089822592214a382804c2b6791532c47bbe85b08905221e62fc9ef89c444d0"
+    },
+    {
+      "location": "https://apsu.apple.com/data/108/091-02732-20171211-347C1FA0-DC1A-11E7-99EC-CE639FB6B499/7.6.9.basebinary",
+      "productID": "108",
+      "version": "7.6.9",
+      "sourceVersion": "76900.11",
+      "sizeInBytes": 6297472,
+      "sha256": "d0a599f5d0d41933209e6f75809e060b1b52b78d2092185b2acb174ce4dfff96"
+    },
+    {
+      "location": "https://apsu.apple.com/data/108/031-91646-20161220-D418804C-C64C-11E6-9418-2260480386D3/7.6.8.basebinary",
+      "productID": "108",
+      "version": "7.6.8",
+      "sourceVersion": "76800.1",
+      "sizeInBytes": 6301864,
+      "sha256": "a2b993bea781c6b0c94dfa27d359989078adcfc456620cd20c9ad6d1e7fe42b4"
+    },
+    {
+      "location": "https://apsu.apple.com/data/108/031-45949-20160525-920D8120-2138-11E6-BD6C-30535529DBDF/7.6.7.basebinary",
+      "productID": "108",
+      "version": "7.6.7",
+      "sourceVersion": "76700.5",
+      "sizeInBytes": 6301740,
+      "sha256": "d28e788f361008e88424788ed2a1cf601ad5934f125d603921d8fc9f88ae7c12"
+    },
+    {
+      "location": "https://apsu.apple.com/data/108/041-9808.20130814.Asc22/7.6.4.basebinary",
+      "productID": "108",
+      "version": "7.6.4",
+      "sourceVersion": "76400.10",
+      "sizeInBytes": 6288064,
+      "sha256": "c83a26190611b3a237c5eefdb797f5ee8e36386afa8aa0a68f422dd5879b1020"
+    },
+    {
+      "location": "https://apsu.apple.com/data/108/041-9690.20130207.Aq23e/7.6.3.basebinary",
+      "productID": "108",
+      "version": "7.6.3",
+      "sourceVersion": "76300.7",
+      "sizeInBytes": 6286500,
+      "sha256": "4cf5eac214a2215f987ad90d1984848903757713b28137bb6b2481f9facf76b1"
+    },
+    {
+      "location": "https://apsu.apple.com/data/108/041-3397.20120130.BYAi1/7.6.1.basebinary",
+      "productID": "108",
+      "version": "7.6.1",
+      "sourceVersion": "76100.4",
+      "sizeInBytes": 6236968,
+      "sha256": "d459e58f8f67e348a8df76133cd26a0a660fb9c45b00cf71fc40a2acbaafbe76"
+    },
+    {
+      "location": "https://apsu.apple.com/data/108/041-3383.20111110.Ws6bk/7.6.basebinary",
+      "productID": "108",
+      "version": "7.6",
+      "sourceVersion": "76000.14",
+      "sizeInBytes": 6226712,
+      "sha256": "17a0ade5777f01e6409d7e12517b3499060dc9d984043cf4c4ffe8f64cd4394e"
+    },
+    {
+      "location": "https://apsu.apple.com/data/108/061-6990.20101216.AqwP4/7.5.2.basebinary",
+      "productID": "108",
+      "version": "7.5.2",
+      "sourceVersion": "75200.14",
+      "sizeInBytes": 6156624,
+      "sha256": "7a91198552ff1b11c064d954c4164055c5f03038509032a7c82030310adfc9d3"
+    },
+    {
+      "location": "https://apsu.apple.com/data/107/091-56891-20190619-bbfc0640-6041-444b-9af2-2becd1068a8b/7.8.1.basebinary",
+      "productID": "107",
+      "version": "7.8.1",
+      "sourceVersion": "78100.3",
+      "sizeInBytes": 5405108,
+      "newest": true,
+      "sha256": "c9a948216983dcad358e10d76904c26bd11b2602a08f9bc48fb089bd62804e3e"
+    },
+    {
+      "location": "https://apsu.apple.com/data/107/091-02755-20171211-34757722-DC1A-11E7-9842-DD609FB6B499/7.6.9.basebinary",
+      "productID": "107",
+      "version": "7.6.9",
+      "sourceVersion": "76900.11",
+      "sizeInBytes": 5404772,
+      "sha256": "af049b1f335743d0a11a1601b6ef60d4bcf6eca7bf441ffb7d0b58d59bd5ec18"
+    },
+    {
+      "location": "https://apsu.apple.com/data/107/031-91661-20161220-D416DFD0-C64C-11E6-B96B-1460480386D3/7.6.8.basebinary",
+      "productID": "107",
+      "version": "7.6.8",
+      "sourceVersion": "76800.1",
+      "sizeInBytes": 5406412,
+      "sha256": "62507ff8b309857aff9553e32e7ad8cb7cfa69679e5c19b3a7200b5a2436e5ae"
+    },
+    {
+      "location": "https://apsu.apple.com/data/107/031-45977-20160525-920F3074-2138-11E6-AE70-2E535529DBDF/7.6.7.basebinary",
+      "productID": "107",
+      "version": "7.6.7",
+      "sourceVersion": "76700.5",
+      "sizeInBytes": 5406360,
+      "sha256": "4e27cc6d68ed7fad4ede3973461840b28c522ac67cc2e16407549f7025015afc"
+    },
+    {
+      "location": "https://apsu.apple.com/data/107/041-9820.20130814.Cdf3e/7.6.4.basebinary",
+      "productID": "107",
+      "version": "7.6.4",
+      "sourceVersion": "76400.10",
+      "sizeInBytes": 5402348,
+      "sha256": "3107e4aa5387b92656e21ccc858c52923ea5428c4c417645c87f17c459623b25"
+    },
+    {
+      "location": "https://apsu.apple.com/data/107/041-9688.20130207.Xdf5t/7.6.3.basebinary",
+      "productID": "107",
+      "version": "7.6.3",
+      "sourceVersion": "76300.7",
+      "sizeInBytes": 5395896,
+      "sha256": "53db55121855f1cba66376659fdf8e5bb780c244b204791308aa7d6d869b0178"
+    },
+    {
+      "location": "https://apsu.apple.com/data/107/041-3401.20120130.Za10o/7.6.1.basebinary",
+      "productID": "107",
+      "version": "7.6.1",
+      "sourceVersion": "76100.4",
+      "sizeInBytes": 5342544,
+      "sha256": "66073d7f6cd87639629e0795aed265d825f4a09b0572366cc3885886e65b903c"
+    },
+    {
+      "location": "https://apsu.apple.com/data/107/041-3388.20111110.62rze/7.6.basebinary",
+      "productID": "107",
+      "version": "7.6",
+      "sourceVersion": "76000.14",
+      "sizeInBytes": 5332872,
+      "sha256": "4b7a9dd8b2ea9300fa355dd7b2069d61b960c957672d95a17e0deb4f1dd9572d"
+    },
+    {
+      "location": "https://apsu.apple.com/data/107/061-6988.20101216.VbghY/7.5.2.basebinary",
+      "productID": "107",
+      "version": "7.5.2",
+      "sourceVersion": "75200.14",
+      "sizeInBytes": 5254156,
+      "sha256": "19624e42c6ee13cde846e6379bd61f70d723b4c799b6dba32eff3d92583d45cc"
+    },
+    {
+      "location": "https://apsu.apple.com/data/106/091-56889-20190619-815589c9-b376-40e6-9bd8-f39865b43d6e/7.8.1.basebinary",
+      "productID": "106",
+      "version": "7.8.1",
+      "sourceVersion": "78100.3",
+      "sizeInBytes": 6147316,
+      "newest": true,
+      "sha256": "6d795ff0e724f7360ccbe495e89626d73a3cfe865bab681b6b68bc9ad2918e2f"
+    },
+    {
+      "location": "https://apsu.apple.com/data/106/091-02760-20171211-3479737C-DC1A-11E7-8EE9-CA639FB6B499/7.6.9.basebinary",
+      "productID": "106",
+      "version": "7.6.9",
+      "sourceVersion": "76900.11",
+      "sizeInBytes": 6146932,
+      "sha256": "93c1c0d282d1f0ee24cc6783dde3510539e9f8eee48d65c40e719a17668ef93e"
+    },
+    {
+      "location": "https://apsu.apple.com/data/106/031-91660-20161220-D416653C-C64C-11E6-B199-1660480386D3/7.6.8.basebinary",
+      "productID": "106",
+      "version": "7.6.8",
+      "sourceVersion": "76800.1",
+      "sizeInBytes": 6151024,
+      "sha256": "12bf9455f08dd285650f64220673b686d086321cae61d56b3e988e78d243e196"
+    },
+    {
+      "location": "https://apsu.apple.com/data/106/031-45976-20160525-920DDB5C-2138-11E6-A1C6-2C535529DBDF/7.6.7.basebinary",
+      "productID": "106",
+      "version": "7.6.7",
+      "sourceVersion": "76700.5",
+      "sizeInBytes": 6151052,
+      "sha256": "18b90f2101dabcd809de8346f4a2dc6b034c74a6adeeba5c1a4f446a272adbfd"
+    },
+    {
+      "location": "https://apsu.apple.com/data/106/041-9821.20130814.K11yG/7.6.4.basebinary",
+      "productID": "106",
+      "version": "7.6.4",
+      "sourceVersion": "76400.10",
+      "sizeInBytes": 6145904,
+      "sha256": "457adcdf3e6a3f8c8ebea91fe0b182810e91020936e35d7c27df417a3df4ad16"
+    },
+    {
+      "location": "https://apsu.apple.com/data/106/041-9689.20130207.Comm9/7.6.3.basebinary",
+      "productID": "106",
+      "version": "7.6.3",
+      "sourceVersion": "76300.7",
+      "sizeInBytes": 6144120,
+      "sha256": "541aa20b17b7339ddae7ff812428652ebab13471019a8d041a060a038af1ce8f"
+    },
+    {
+      "location": "https://apsu.apple.com/data/106/041-3402.20120130.Mcf5t/7.6.1.basebinary",
+      "productID": "106",
+      "version": "7.6.1",
+      "sourceVersion": "76100.4",
+      "sizeInBytes": 6093568,
+      "sha256": "870af144f33673aa58d222a24c760915396cb64de30396097adc688f83c7c585"
+    },
+    {
+      "location": "https://apsu.apple.com/data/106/041-3389.20111110.dMCVv/7.6.basebinary",
+      "productID": "106",
+      "version": "7.6",
+      "sourceVersion": "76000.14",
+      "sizeInBytes": 6081428,
+      "sha256": "9ffc7d2c048f0ab409c7d9e11644e3fed188f823f98bf557323fea40d829a988"
+    },
+    {
+      "location": "https://apsu.apple.com/data/106/061-6989.20101216.Axsew/7.5.2.basebinary",
+      "productID": "106",
+      "version": "7.5.2",
+      "sourceVersion": "75200.14",
+      "sizeInBytes": 5978344,
+      "sha256": "c3ac23c81489b9fb6504d3156b90ff99cbb57ed39c4ba699372103306276469b"
+    },
+    {
+      "location": "https://apsu.apple.com/data/105/091-56885-20190619-da4ebb00-feb8-42ec-8c79-6d693556b120/7.8.1.basebinary",
+      "productID": "105",
+      "version": "7.8.1",
+      "sourceVersion": "78100.3",
+      "sizeInBytes": 6099972,
+      "newest": true,
+      "sha256": "f1ef508b5c0da3f8c6c455c8b1425d26365676c3c7247e70ca73721bd7010169"
+    },
+    {
+      "location": "https://apsu.apple.com/data/105/091-02729-20171211-347B8AA4-DC1A-11E7-970F-C8639FB6B499/7.6.9.basebinary",
+      "productID": "105",
+      "version": "7.6.9",
+      "sourceVersion": "76900.11",
+      "sizeInBytes": 6099804,
+      "sha256": "c399e2e8506097179da2890e33c915c721308a6fef928c739fac0deb60daf8d5"
+    },
+    {
+      "location": "https://apsu.apple.com/data/105/031-91663-20161220-D4174196-C64C-11E6-8FC8-1260480386D3/7.6.8.basebinary",
+      "productID": "105",
+      "version": "7.6.8",
+      "sourceVersion": "76800.1",
+      "sizeInBytes": 6104944,
+      "sha256": "7806252b130b5886861c367ebc6e02e2604fae9e1fb01ad0c3e5cc6fbfebf5bd"
+    },
+    {
+      "location": "https://apsu.apple.com/data/105/031-45979-20160525-92097B20-2138-11E6-86AE-2A535529DBDF/7.6.7.basebinary",
+      "productID": "105",
+      "version": "7.6.7",
+      "sourceVersion": "76700.5",
+      "sizeInBytes": 6104812,
+      "sha256": "d2ac4be248c7ff879ed516aeadd63fc35e752c82df516274169e41a4f6f982ef"
+    },
+    {
+      "location": "https://apsu.apple.com/data/105/041-9822.20130814.3h1QC/7.6.4.basebinary",
+      "productID": "105",
+      "version": "7.6.4",
+      "sourceVersion": "76400.10",
+      "sizeInBytes": 6093760,
+      "sha256": "14a82dbc82f0a5fda35137277c2bbd781820f1a77b32e607e75877b12de85f01"
+    },
+    {
+      "location": "https://apsu.apple.com/data/105/041-9697.20130207.Beb0t/7.6.3.basebinary",
+      "productID": "105",
+      "version": "7.6.3",
+      "sourceVersion": "76300.7",
+      "sizeInBytes": 6092620,
+      "sha256": "cd63be07c0b5fcea7f60ecfb5e1603700960cd2a6f6bb8088cc5c160ef373c18"
+    },
+    {
+      "location": "https://apsu.apple.com/data/105/041-3403.20120130.Juy76/7.6.1.basebinary",
+      "productID": "105",
+      "version": "7.6.1",
+      "sourceVersion": "76100.4",
+      "sizeInBytes": 6040260,
+      "sha256": "266abcb21375f4ae4e51dd1d6c93b806cf49f48853658004a9754eb41bf2d7a9"
+    },
+    {
+      "location": "https://apsu.apple.com/data/105/041-3390.20111110.5jti5/7.6.basebinary",
+      "productID": "105",
+      "version": "7.6",
+      "sourceVersion": "76000.14",
+      "sizeInBytes": 6029608,
+      "sha256": "b7e81625e0d734e4d66c5be1320da1d25a032057c7afa67e87a235299ec4807c"
+    },
+    {
+      "location": "https://apsu.apple.com/data/105/061-6987.20101216.Cder4/7.5.2.basebinary",
+      "productID": "105",
+      "version": "7.5.2",
+      "sourceVersion": "75200.14",
+      "sizeInBytes": 5960436,
+      "sha256": "908f9f072be2caf83f7d63872a8863fab4dae50682449a7d39eda23ea8f146e1"
+    },
+    {
+      "location": "https://apsu.apple.com/data/104/091-56890-20190619-b51aab6f-04b2-496c-b403-129a10b99227/7.8.1.basebinary",
+      "productID": "104",
+      "version": "7.8.1",
+      "sourceVersion": "78100.3",
+      "sizeInBytes": 6099172,
+      "newest": true,
+      "sha256": "a7b313ffd88285b150136e0340fd2799d8a847d0414fed5d5931fc8c55fddf67"
+    },
+    {
+      "location": "https://apsu.apple.com/data/104/091-02743-20171211-347E25AC-DC1A-11E7-9D8E-C6639FB6B499/7.6.9.basebinary",
+      "productID": "104",
+      "version": "7.6.9",
+      "sourceVersion": "76900.11",
+      "sizeInBytes": 6098980,
+      "sha256": "d5c5b62a95670d0390d2a354e893e1350a20229206a50c8907a289c9a43c49e2"
+    },
+    {
+      "location": "https://apsu.apple.com/data/104/031-91664-20161220-D4159BB6-C64C-11E6-92C2-1060480386D3/7.6.8.basebinary",
+      "productID": "104",
+      "version": "7.6.8",
+      "sourceVersion": "76800.1",
+      "sizeInBytes": 6103528,
+      "sha256": "faa21e17fd6fd364fcc8f58ea9c8f7d4a3cb00b1d1776358114cefa1a1424d87"
+    },
+    {
+      "location": "https://apsu.apple.com/data/104/031-45980-20160525-9210545E-2138-11E6-B67F-28535529DBDF/7.6.7.basebinary",
+      "productID": "104",
+      "version": "7.6.7",
+      "sourceVersion": "76700.5",
+      "sizeInBytes": 6103224,
+      "sha256": "3f6c7d96a89de7f7c973fb52091d553d2830bc1e98ca91d9cecefd18188ec1c9"
+    },
+    {
+      "location": "https://apsu.apple.com/data/104/041-9817.20130814.00dwv/7.6.4.basebinary",
+      "productID": "104",
+      "version": "7.6.4",
+      "sourceVersion": "76400.10",
+      "sizeInBytes": 6093720,
+      "sha256": "59c2e6e4c9007fa23e2281ead39cc65881e4d1f4668bf58687f6f2745a39b99b"
+    },
+    {
+      "location": "https://apsu.apple.com/data/104/041-9687.20130207.Sturt/7.6.3.basebinary",
+      "productID": "104",
+      "version": "7.6.3",
+      "sourceVersion": "76300.7",
+      "sizeInBytes": 6092108,
+      "sha256": "924938e57b227f2328ee9c07185130aa376e311645942108d83aa0579930cd69"
+    },
+    {
+      "location": "https://apsu.apple.com/data/104/041-3400.20120130.SwWef/7.6.1.basebinary",
+      "productID": "104",
+      "version": "7.6.1",
+      "sourceVersion": "76100.4",
+      "sizeInBytes": 6039680,
+      "sha256": "e8f82fcdc3149371a0b35985bc98c18a4f0fd54f9c7e4f47c689def00fac713b"
+    },
+    {
+      "location": "https://apsu.apple.com/data/104/041-3387.20111110.ejie2/7.6.basebinary",
+      "productID": "104",
+      "version": "7.6",
+      "sourceVersion": "76000.14",
+      "sizeInBytes": 6030092,
+      "sha256": "7d9c9fe6ed8c4e4a82fb9ba8a505ae65e764f343302d3faf62d7eb9a21c3041d"
+    },
+    {
+      "location": "https://apsu.apple.com/data/104/061-6986.20101216.Rert5/7.5.2.basebinary",
+      "productID": "104",
+      "version": "7.5.2",
+      "sourceVersion": "75200.14",
+      "sizeInBytes": 5958288,
+      "sha256": "c5770adf104385cd9627e58c78283fba2b91d8fa2bbf91986ed45932ac167c3f"
+    },
+    {
+      "location": "https://apsu.apple.com/data/102/061-3062.20070321.omIpl/6.3.basebinary",
+      "productID": "102",
+      "version": "6.3",
+      "sizeInBytes": 1572936,
+      "newest": true,
+      "sha256": "af5d7e34e1603ed42929a2eefdcd13074802bf3e784934291a86880584ac7380"
+    },
+    {
+      "location": "https://apsu.apple.com/data/003/061-3059.20070321.7YY6v/5.7.basebinary",
+      "productID": "3",
+      "version": "5.7",
+      "sizeInBytes": 1572900,
+      "newest": true,
+      "sha256": "19a229844b5119a509bd6a565a20f48d52de1beaf7316ad9bd1c7a33442bedbf"
+    }
+  ]
+}
