@@ -423,15 +423,24 @@ def test_build_python_packages_uses_bytecode_safe_env(
         return subprocess.CompletedProcess(cmd, 0)
 
     monkeypatch.setattr(package_app, "python_major_minor", lambda python: (3, 13))
+    monkeypatch.setattr(package_app, "verified_pip_wheel", lambda: tmp_path / "pip.whl")
     monkeypatch.setattr(package_app, "run", fake_run)
     monkeypatch.setattr(package_app, "remove_optional_zeroconf_extensions", lambda site_packages: None)
 
     package_app.build_python_packages("python3", tmp_path / "site-packages")
 
     assert len(calls) == 4
+    assert "--without-pip" in calls[0][0]
+    assert "--no-index" in calls[-1][0]
+    for cmd, _env in calls[1:3]:
+        assert "--require-hashes" in cmd
+        assert "--only-binary=:all:" in cmd
+        assert "--no-deps" in cmd
+        assert "--isolated" in cmd
     for _cmd, env in calls:
         assert env["PYTHONDONTWRITEBYTECODE"] == "1"
         assert env["PYTHONNOUSERSITE"] == "1"
+        assert env["PIP_CONFIG_FILE"] == __import__("os").devnull
         assert Path(env["PYTHONPYCACHEPREFIX"]).name == "pycache"
 
 
@@ -1483,3 +1492,28 @@ def test_python_runtime_pkg_rejects_unreviewed_url():
     args = SimpleNamespace(python_runtime_pkg=None, python_runtime_url="https://example.invalid/python.pkg")
     with pytest.raises(RuntimeError, match="reviewed package manifest"):
         module.python_runtime_pkg(args)
+
+
+def test_bootstrap_installer_rejects_modified_cached_wheel(monkeypatch, tmp_path):
+    module = load_package_app_module()
+    monkeypatch.setattr(module, "PACKAGE_ROOT", tmp_path)
+    wheel = module.package_cache_dir("python-downloads") / f"pip-{module.PIP_VERSION}-py3-none-any.whl"
+    wheel.write_bytes(b"unapproved installer")
+    with pytest.raises(RuntimeError, match="pip checksum mismatch"):
+        module.verified_pip_wheel()
+
+
+def test_bootstrap_installer_matches_auditable_requirement():
+    module = load_package_app_module()
+    requirement = (module.REPO_ROOT / "requirements-bootstrap.txt").read_text()
+    assert f"pip=={module.PIP_VERSION}" in requirement
+    assert f"--hash=sha256:{module.PIP_SHA256}" in requirement
+
+
+def test_python_build_environment_drops_inherited_code_and_package_sources(monkeypatch, tmp_path):
+    module = load_package_app_module()
+    monkeypatch.setattr(module, "PACKAGE_ROOT", tmp_path)
+    for name in ("PYTHONPATH", "PYTHONHOME", "DYLD_INSERT_LIBRARIES", "PIP_INDEX_URL", "PIP_EXTRA_INDEX_URL"):
+        monkeypatch.setenv(name, "/unapproved")
+    env = module.python_subprocess_env()
+    assert not any(name in env for name in ("PYTHONPATH", "PYTHONHOME", "DYLD_INSERT_LIBRARIES", "PIP_INDEX_URL", "PIP_EXTRA_INDEX_URL"))

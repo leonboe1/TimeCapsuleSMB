@@ -32,11 +32,14 @@ APP_ICON_NAME = PRODUCT_NAME
 DEFAULT_ICON_SOURCE = PACKAGE_ROOT / "Assets" / "AppIcon" / "tcs.jpg"
 ARTIFACT_MANIFEST = REPO_ROOT / "src" / "timecapsulesmb" / "assets" / "artifact-manifest.json"
 RESOURCE_BUNDLE_NAME = "TimeCapsuleSMBMac_TimeCapsuleSMBApp.bundle"
-PYTHON_RUNTIME_VERSION = "3.13.13"
-PYTHON_RUNTIME_SHA256 = "a909cb655af5db67d5a90b3603437a1d58bec3446d624e4034e278ac62023cc9"
+PYTHON_RUNTIME_VERSION = "3.13.15"
+PYTHON_RUNTIME_SHA256 = "3b7eaf7f29825f796e8267024435540ddf1f17fc9a97ad58095daa7a75bfdcd3"
 PYTHON_RUNTIME_URL = f"https://www.python.org/ftp/python/{PYTHON_RUNTIME_VERSION}/python-{PYTHON_RUNTIME_VERSION}-macos11.pkg"
 PYTHON_FRAMEWORK_NAME = "Python.framework"
 APP_BUNDLED_PYTHON_REQUIREMENTS = ("certifi==2026.7.22",)
+PIP_VERSION = "26.2.1"
+PIP_SHA256 = "71138adf1f4ca900cdb7d289c21b7494329f2332b6d85f0e1c42108c0384ed3e"
+PIP_URL = "https://files.pythonhosted.org/packages/f3/6e/1736e5b4ae2b778ef2f81c47d797de9f891d4d8acb047a24ca37a60294dd/pip-26.2.1-py3-none-any.whl"
 DEFAULT_ARCHITECTURES = ("arm64", "x86_64")
 CACHE_KEY_VERSION = 1
 PYTHON_RUNTIME_CACHE_VERSION = 2
@@ -296,6 +299,9 @@ def python_subprocess_env(
     pycache_prefix: Path | None = None,
 ) -> dict[str, str]:
     merged = os.environ.copy()
+    for name in list(merged):
+        if name.startswith(("PYTHON", "PIP_", "DYLD_")):
+            del merged[name]
     if env:
         merged.update(env)
     if python_home is not None:
@@ -305,6 +311,7 @@ def python_subprocess_env(
     merged["PYTHONPYCACHEPREFIX"] = str(prefix)
     merged["PYTHONNOUSERSITE"] = "1"
     merged["PYTHONDONTWRITEBYTECODE"] = "1"
+    merged["PIP_CONFIG_FILE"] = os.devnull
     return merged
 
 
@@ -684,6 +691,8 @@ def prune_python_runtime(framework: Path) -> None:
         "lib/python3.13/idlelib",
         "lib/python3.13/tkinter",
         "lib/python3.13/test",
+        # Package installation belongs to the build environment, not the app.
+        "lib/python3.13/ensurepip",
     ):
         path = version_dir / relative_path
         if path.is_dir():
@@ -773,6 +782,15 @@ def python_site_packages_cache_entry(python: str, architectures: tuple[str, ...]
     return package_cache_dir("python-site-packages") / key
 
 
+def verified_pip_wheel() -> Path:
+    wheel = package_cache_dir("python-downloads") / f"pip-{PIP_VERSION}-py3-none-any.whl"
+    if not wheel.is_file():
+        download_file(PIP_URL, wheel)
+    if sha256_file(wheel) != PIP_SHA256:
+        raise RuntimeError("Bootstrap pip checksum mismatch")
+    return wheel
+
+
 def build_python_packages(python: str, site_packages: Path) -> None:
     major, minor = python_major_minor(python)
     if (major, minor) < (3, 10):
@@ -781,14 +799,18 @@ def build_python_packages(python: str, site_packages: Path) -> None:
     with tempfile.TemporaryDirectory(prefix="timecapsulesmb-package-python-") as tmp:
         build_venv = Path(tmp) / "venv"
         env = python_subprocess_env(pycache_prefix=Path(tmp) / "pycache")
-        run([python, "-m", "venv", str(build_venv)], env=env)
+        pip_wheel = verified_pip_wheel()
+        run([python, "-I", "-m", "venv", "--without-pip", str(build_venv)], env=env)
         build_python = build_venv / "bin" / "python"
-        run([str(build_python), "-m", "pip", "install", "--require-hashes", "-r", str(REPO_ROOT / "requirements-build.txt")], env=env)
+        pip = [str(build_python), "-I", str(pip_wheel) + "/pip", "--isolated", "--disable-pip-version-check"]
+        install = [*pip, "install", "--no-cache-dir", "--index-url", "https://pypi.org/simple"]
+        locked = ["--only-binary=:all:", "--no-deps", "--require-hashes"]
+        run([*install, *locked, "-r", str(REPO_ROOT / "requirements-build.txt")], env=env)
         generated_build_lib = REPO_ROOT / "build" / "lib"
         build_lib_existed = generated_build_lib.exists()
         try:
-            run([str(build_python), "-m", "pip", "install", "--require-hashes", "--target", str(site_packages), "-r", str(REPO_ROOT / "requirements.txt")], env=env)
-            run([str(build_python), "-m", "pip", "install", "--no-build-isolation", "--no-deps", "--target", str(site_packages), str(REPO_ROOT)], env=env)
+            run([*install, *locked, "--target", str(site_packages), "-r", str(REPO_ROOT / "requirements.txt")], env=env)
+            run([*install, "--no-index", "--no-build-isolation", "--no-deps", "--target", str(site_packages), str(REPO_ROOT)], env=env)
         finally:
             if not build_lib_existed and generated_build_lib.exists():
                 shutil.rmtree(generated_build_lib)
