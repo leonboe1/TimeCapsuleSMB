@@ -112,9 +112,11 @@ def test_smoke_request_rejects_failed_result_event(monkeypatch: pytest.MonkeyPat
         package_app.smoke_request(tmp_path / "tcapsule", "validate-install", tmp_path)
 
 
+@pytest.mark.parametrize("resource_layout", ["flat", "contents"])
 def test_assert_bundle_layout_checks_helper_python_tools_and_artifacts(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
+    resource_layout,
 ) -> None:
     package_app = load_package_app_module()
     app = tmp_path / "TimeCapsuleSMB.app"
@@ -125,6 +127,10 @@ def test_assert_bundle_layout_checks_helper_python_tools_and_artifacts(
     for directory in (helper.parent, python_packages, tools, distribution / "bin" / "payloads"):
         directory.mkdir(parents=True)
     create_fake_app_executable_and_resources(app)
+    if resource_layout == "contents":
+        bundle = app / "Contents/Resources" / package_app.RESOURCE_BUNDLE_NAME
+        (bundle / "Contents/Resources").mkdir(parents=True)
+        (bundle / "en.lproj").rename(bundle / "Contents/Resources/en.lproj")
     helper.write_text("#!/bin/sh\n", encoding="utf-8")
     helper.chmod(0o755)
     (distribution / "artifact-manifest.json").write_text('{"artifacts":{}}', encoding="utf-8")

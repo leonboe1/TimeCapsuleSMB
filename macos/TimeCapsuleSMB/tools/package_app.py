@@ -1401,7 +1401,8 @@ def assert_bundle_layout(
         assert_tool_architectures(app, architectures)
         if full_validation:
             assert_runtime_macho_architectures(app, architectures)
-    if not (resource_bundle / "en.lproj" / "Localizable.strings").is_file():
+    resource_roots = [resource_bundle, resource_bundle / "Contents" / "Resources"]
+    if not any((root / "en.lproj" / "Localizable.strings").is_file() for root in resource_roots):
         raise RuntimeError(f"App bundle is missing Swift resource bundle localizations: {resource_bundle}")
     if not python_packages.is_dir():
         raise RuntimeError(f"App bundle is missing bundled Python packages: {python_packages}")
