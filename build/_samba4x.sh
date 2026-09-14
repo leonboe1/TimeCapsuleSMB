@@ -744,55 +744,6 @@ extract_samba4x_archive() {
     esac
 }
 
-find_samba4x_gmp_header() {
-    gmp_arch=
-    case "$BUILD_MACHINE_ARCH" in
-        earm*)
-            gmp_arch=earm
-            ;;
-        arm|armeb)
-            gmp_arch="$BUILD_MACHINE_ARCH"
-            ;;
-    esac
-
-    for candidate in \
-        "$BUILD_SRC/external/lgpl3/gmp/lib/libgmp/arch/$gmp_arch/gmp.h" \
-        "$BUILD_SRC/external/lgpl3/gmp/lib/libgmp/arch/$BUILD_MACHINE_ARCH/gmp.h" \
-        "$BUILD_SRC/external/lgpl3/gmp/lib/libgmp/arch/earm/gmp.h" \
-        "$BUILD_SRC/external/lgpl3/gmp/lib/libgmp/arch/arm/gmp.h" \
-        "$BUILD_SRC/external/lgpl3/gmp/lib/libgmp/arch/armeb/gmp.h"
-    do
-        if [ -n "$candidate" ] && [ -f "$candidate" ]; then
-            printf '%s\n' "$candidate"
-            return 0
-        fi
-    done
-
-    echo "Unable to find NetBSD target gmp.h under $BUILD_SRC/external/lgpl3/gmp" >&2
-    return 1
-}
-
-install_samba4x_target_gmp() {
-    gmp_lib="$OBJ/external/lgpl3/gmp/lib/libgmp/libgmp.a"
-    if ! gmp_header="$(find_samba4x_gmp_header)"; then
-        return 1
-    fi
-
-    if [ ! -f "$gmp_lib" ]; then
-        echo "Unable to find NetBSD target libgmp.a at $gmp_lib"
-        return 1
-    fi
-
-    mkdir -p "$SAMBA4X_DEPS/lib" "$SAMBA4X_DEPS/include" "$SAMBA4X_DEPS/lib/pkgconfig"
-    cp "$gmp_lib" "$SAMBA4X_DEPS/lib/libgmp.a"
-    cp "$gmp_header" "$SAMBA4X_DEPS/include/gmp.h"
-    gmp_mparam="$(dirname "$gmp_header")/gmp-mparam.h"
-    if [ -f "$gmp_mparam" ]; then
-        cp "$gmp_mparam" "$SAMBA4X_DEPS/include/gmp-mparam.h"
-    fi
-    write_samba4x_gmp_pc "6.1.0"
-}
-
 write_samba4x_gmp_pc() {
     version="$1"
     cat >"$SAMBA4X_DEPS/lib/pkgconfig/gmp.pc" <<EOF
@@ -833,29 +784,24 @@ build_samba4x_gmp() {
     touch "$stamp"
 }
 
-install_samba4x_sysroot_pkg_config() {
-    mkdir -p "$SAMBA4X_DEPS/lib/pkgconfig"
-
-    if [ ! -f "$SYSROOT/usr/include/zlib.h" ] || [ ! -f "$SYSROOT/usr/lib/libz.a" ]; then
-        echo "Unable to find NetBSD target zlib headers/library under $SYSROOT/usr"
-        exit 1
+build_samba4x_zlib() {
+    stamp="$SAMBA4X_DEPS/.stamp-zlib-$SAMBA4X_ZLIB_VERSION"
+    if [ -f "$stamp" ] && [ -f "$SAMBA4X_DEPS/lib/libz.a" ]; then
+        echo "zlib $SAMBA4X_ZLIB_VERSION already built."
+        return 0
     fi
-    cat >"$SAMBA4X_DEPS/lib/pkgconfig/zlib.pc" <<EOF
-prefix=$SYSROOT/usr
-exec_prefix=\${prefix}
-libdir=\${prefix}/lib
-includedir=\${prefix}/include
-
-Name: zlib
-Description: zlib compression library
-Version: 1.2.8
-Libs: -L\${libdir} -lz
-Cflags: -I\${includedir}
-EOF
+    archive="$(download_samba4x_archive "$SAMBA4X_ZLIB_URL" "zlib-$SAMBA4X_ZLIB_VERSION.tar.gz")"
+    extract_samba4x_archive "$archive" "zlib-$SAMBA4X_ZLIB_VERSION"
+    cd "$SAMBA4X_BUILD/zlib-$SAMBA4X_ZLIB_VERSION"
+    env CHOST="$SAMBA4X_HOST_ALIAS" CC="$CC" AR="$AR" RANLIB="$RANLIB" \
+        CPPFLAGS="$CPPFLAGS" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" \
+        ./configure --static --prefix="$SAMBA4X_DEPS"
+    gmake -j"$SAMBA4X_JOBS" DESTDIR= install
+    touch "$stamp"
 }
 
 build_samba4x_nettle() {
-    stamp="$SAMBA4X_DEPS/.stamp-nettle-$SAMBA4X_NETTLE_VERSION-system-gmp"
+    stamp="$SAMBA4X_DEPS/.stamp-nettle-$SAMBA4X_NETTLE_VERSION-gmp-$SAMBA4X_GMP_VERSION"
     if [ -f "$stamp" ] &&
        [ -f "$SAMBA4X_DEPS/lib/libnettle.a" ] &&
        [ -f "$SAMBA4X_DEPS/lib/libhogweed.a" ]; then
@@ -977,13 +923,8 @@ build_samba4x_gnutls() {
 prepare_samba4x_deps() {
     echo "Preparing Samba4X static dependencies under $SAMBA4X_DEPS"
     mkdir -p "$SAMBA4X_DEPS" "$SAMBA4X_DEPS/lib" "$SAMBA4X_DEPS/include" "$SAMBA4X_DEPS/lib/pkgconfig"
-    if install_samba4x_target_gmp; then
-        echo "Using NetBSD target GMP from $OBJ"
-    else
-        echo "NetBSD target GMP is unavailable; building GMP $SAMBA4X_GMP_VERSION."
-        build_samba4x_gmp
-    fi
-    install_samba4x_sysroot_pkg_config
+    build_samba4x_gmp
+    build_samba4x_zlib
     build_samba4x_nettle
     build_samba4x_libtasn1
     build_samba4x_gnutls

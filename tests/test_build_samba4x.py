@@ -235,7 +235,11 @@ class Samba4XBuildScriptTests(unittest.TestCase):
         self.make_file(build_src / "external" / "lgpl3" / "gmp" / "lib" / "libgmp" / "arch" / gmp_arch / "gmp.h")
 
         deps = samba_build / "deps"
-        self.make_file(deps / ".stamp-nettle-3.10.2-system-gmp")
+        self.make_file(deps / ".stamp-zlib-1.3.2")
+        self.make_file(deps / "lib" / "libz.a")
+        self.make_file(deps / ".stamp-gmp-6.3.0")
+        self.make_file(deps / "lib" / "libgmp.a")
+        self.make_file(deps / ".stamp-nettle-3.10.2-gmp-6.3.0")
         self.make_file(deps / "lib" / "libnettle.a")
         self.make_file(deps / "lib" / "libhogweed.a")
         self.make_file(deps / ".stamp-libtasn1-4.21.0")

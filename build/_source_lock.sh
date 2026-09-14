@@ -23,6 +23,7 @@ tc_checkout_pinned_source() {
 tc_verify_source_archive() {
     archive_path=$1
     case "$(basename "$archive_path")" in
+        zlib-1.3.2.tar.gz) expected=bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16 ;;
         gmp-6.3.0.tar.xz) expected=a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898 ;;
         nettle-3.10.2.tar.gz) expected=fe9ff51cb1f2abb5e65a6b8c10a92da0ab5ab6eaf26e7fc2b675c45f1fb519b5 ;;
         libtasn1-4.21.0.tar.gz) expected=1d8a444a223cc5464240777346e125de51d8e6abf0b8bac742ac84609167dc87 ;;
