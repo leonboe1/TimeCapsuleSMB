@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "scope": "Router runtime component inventory. Vendored code such as gnulib and Heimdal is covered by its containing source archive or commit; this is not independent attribution or review of every third-party file. MacOS packaging tools and Python runtime are outside this inventory.",
+  "components": [
+    {
+      "name": "TimeCapsuleSMB native helpers",
+      "source_commit": "03f324308081c39c7f23ac20ee17de56932d19b3",
+      "source_directory": "build/native",
+      "artifacts": [
+        "mdns-advertiser",
+        "nbns-advertiser",
+        "service"
+      ]
+    },
+    {
+      "name": "Samba",
+      "version": "4.25.0rc2",
+      "source_repository": "https://github.com/samba-team/samba.git",
+      "source_commit": "b5923e8d9563bcee569eb3f3ecc712a2a3761c1c",
+      "patch_series": "build/patches/samba4x/series",
+      "artifacts": [
+        "smbd"
+      ],
+      "bundled_sources": {
+        "talloc": "2.5.0",
+        "tevent": "0.17.2",
+        "tdb": "1.4.15",
+        "ldb": "2.11.0",
+        "Heimdal": "vendored source at the Samba commit above"
+      }
+    },
+    {
+      "name": "GMP",
+      "version": "6.3.0",
+      "source_archive": "https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.xz",
+      "source_sha256": "a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898",
+      "artifacts": [
+        "smbd"
+      ]
+    },
+    {
+      "name": "zlib",
+      "version": "1.3.2",
+      "source_archive": "https://zlib.net/fossils/zlib-1.3.2.tar.gz",
+      "source_sha256": "bb329a0a2cd0274d05519d61c667c062e06990d72e125ee2dfa8de64f0119d16",
+      "artifacts": [
+        "smbd"
+      ]
+    },
+    {
+      "name": "Nettle",
+      "version": "3.10.2",
+      "source_archive": "https://ftp.gnu.org/gnu/nettle/nettle-3.10.2.tar.gz",
+      "source_sha256": "fe9ff51cb1f2abb5e65a6b8c10a92da0ab5ab6eaf26e7fc2b675c45f1fb519b5",
+      "artifacts": [
+        "smbd"
+      ]
+    },
+    {
+      "name": "libtasn1",
+      "version": "4.21.0",
+      "source_archive": "https://ftp.gnu.org/gnu/libtasn1/libtasn1-4.21.0.tar.gz",
+      "source_sha256": "1d8a444a223cc5464240777346e125de51d8e6abf0b8bac742ac84609167dc87",
+      "artifacts": [
+        "smbd"
+      ]
+    },
+    {
+      "name": "GnuTLS",
+      "version": "3.8.13",
+      "source_archive": "https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.13.tar.xz",
+      "source_sha256": "ffed8ec1bf09c2426d4f14aae377de4753b53e537d685e604e99a8b16ca9c97e",
+      "artifacts": [
+        "smbd"
+      ],
+      "patch_series": "build/patches/gnutls/series"
+    },
+    {
+      "name": "NetBSD target runtime",
+      "version": "7.2",
+      "source_repository": "https://github.com/NetBSD/src.git",
+      "source_commit": "c6d30a1d62252652a8c6804f6c18408cbf5ec39c",
+      "lane_family": "netbsd7",
+      "scope": "Static libraries and startup objects. Exact archive hashes and retained members are recorded by each lane manifest and linker map."
+    },
+    {
+      "name": "NetBSD target runtime",
+      "version": "4.0",
+      "source_repository": "https://github.com/NetBSD/src.git",
+      "source_commit": "07a9c83a12c56f1bb6fe0e2ae08c9d2b46dd307c",
+      "lane_family": "netbsd4",
+      "scope": "Static libraries and startup objects. Exact archive hashes and retained members are recorded by each lane manifest and linker map."
+    }
+  ]
+}

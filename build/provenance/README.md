@@ -6,6 +6,11 @@ and the applied SDK/Samba source diffs. Artifact hashes also appear in
 file hashes identify the build inputs; logs and final outputs have separate hashes.
 Use `gzip -dc FILE.gz` to inspect the evidence.
 
+`components.json` inventories the router runtime sources, including the updated
+GnuTLS, Nettle, GMP, libtasn1 and zlib versions. Vendored third-party code remains
+covered by its containing archive or source commit; the inventory does not claim
+an independent audit of every upstream library.
+
 The builder was an isolated NetBSD 10.1 aarch64 VM. `builder.json` identifies its
 downloaded image, installed packages, and host tool hashes. The cross compilers and
 target libraries were built from the pinned official NetBSD source trees. This
