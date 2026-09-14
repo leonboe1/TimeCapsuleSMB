@@ -1,0 +1,19 @@
+--- a/main.c
++++ b/main.c
+@@ -453,7 +453,15 @@
+         fprintf(stderr, "SSHPASS: searching for password prompt using match \"%s\"\n", compare1);
+     }
+ 
+-    int numread=read(fd, buffer, sizeof(buffer)-1 );
++    ssize_t numread=read(fd, buffer, sizeof(buffer)-1 );
++    if( numread < 0 ) {
++        if( errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK )
++            return 0;
++        return RETURN_RUNTIME_ERROR;
++    }
++    if( numread == 0 )
++        return -1;
++
+     buffer[numread] = '\0';
+     if( args.verbose ) {
+         fprintf(stderr, "SSHPASS: read: %s\n", buffer);
