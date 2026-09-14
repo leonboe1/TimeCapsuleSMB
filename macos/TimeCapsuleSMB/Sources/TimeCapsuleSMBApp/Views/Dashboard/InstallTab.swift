@@ -229,16 +229,6 @@ private struct InstallExecutionOptionsView: View {
                         .gridCellColumns(2)
                 }
                 GridRow {
-                        .gridCellColumns(2)
-                }
-                GridRow {
-                    Text(L10n.string("install.advanced_options.rsync_note"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .gridCellColumns(2)
-                }
-                GridRow {
                     Text(L10n.string("field.mount_wait"))
                         .foregroundStyle(.secondary)
                     TextField(L10n.string("field.mount_wait"), text: $store.mountWait)
