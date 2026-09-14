@@ -324,3 +324,51 @@ def test_uninstall_snapshot_cleanup_allows_reinstall_and_retains_metadata(device
     assert not Path(transaction.previous).exists()
     assert device[3].read_bytes() == b"irreplaceable metadata\0\xff"
     deploy(device).release()
+
+
+def test_recovery_frees_partial_flash_copy_before_rewriting_guard(device, monkeypatch):
+    flash_mdns = Path(device[0].flash_targets["mdns"])
+    partial = flash_mdns.with_name(f".{flash_mdns.name}.deploy-new")
+    original_install = DeploymentTransaction._install
+    original_guard = DeploymentTransaction._arm_guard
+    failed = False
+    def install(self, source, destination, digest, mode=None):
+        nonlocal failed
+        if destination == str(flash_mdns) and not failed:
+            failed = True
+            partial.write_bytes(b"partial upload consuming the remaining Flash blocks")
+            raise OSError("No space left on device")
+        original_install(self, source, destination, digest, mode)
+    def guard(self):
+        if partial.exists():
+            raise OSError("No space left for the recovery guard")
+        original_guard(self)
+    monkeypatch.setattr(DeploymentTransaction, "_install", install)
+    monkeypatch.setattr(DeploymentTransaction, "_arm_guard", guard)
+    with pytest.raises(OSError, match="No space left on device"):
+        deploy(device)
+    assert_recovered(device)
+    assert not partial.exists()
+
+
+def test_snapshot_rotation_preserves_unrecognized_contents_and_journal(device):
+    first = deploy(device)
+    first.finalize()
+    first.release()
+    note = Path(first.previous) / "recovery-notes"
+    note.write_bytes(b"keep this information")
+    current = deploy(device)
+    with pytest.raises(subprocess.CalledProcessError):
+        current.finalize()
+    current.release()
+    assert note.read_bytes() == b"keep this information"
+    assert (Path(first.previous) / "journal.json").exists()
+    assert (Path(current.root) / "journal.json").exists()
+
+
+def test_snapshot_rotation_recovers_after_final_empty_directory_cleanup(device):
+    transaction = deploy(device)
+    Path(transaction.previous).mkdir()  # Power loss between unlink(journal) and rmdir.
+    transaction.finalize()
+    transaction.release()
+    assert (Path(transaction.previous) / "journal.json").exists()

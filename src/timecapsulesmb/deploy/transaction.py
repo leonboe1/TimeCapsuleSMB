@@ -186,10 +186,39 @@ class DeploymentTransaction:
             raise RuntimeError("Incomplete deployment recovery journal")
         return data
 
+    def _remove_snapshot(self, root: str) -> None:
+        directories = [f"{root}/new", f"{root}/old"]
+        self._guard_paths([root, *directories])
+        files = [f"{directory}/{i}" for directory in directories for i in range(len(self.plan.uploads))]
+        # Unknown contents may be recovery notes or user data. Refuse to erase
+        # them, and retain the journal if the directory is not a pure snapshot.
+        allowed = "|".join(str(i) for i in range(len(self.plan.uploads)))
+        for directory in directories:
+            self._command(
+                f"for path in {shlex.quote(directory)}/* {shlex.quote(directory)}/.[!.]* {shlex.quote(directory)}/..?*; do "
+                '[ -e "$path" ] || [ -L "$path" ] || continue; '
+                f'case "${{path##*/}}" in {allowed}) [ -f "$path" ] || [ -L "$path" ];; *) exit 1;; esac; done'
+            )
+        self._command(
+            f"for path in {shlex.quote(root)}/* {shlex.quote(root)}/.[!.]* {shlex.quote(root)}/..?*; do "
+            '[ -e "$path" ] || [ -L "$path" ] || continue; '
+            'case "${path##*/}" in new|old) [ -d "$path" ];; '
+            'journal.json|journal.tmp) [ -f "$path" ] || [ -L "$path" ];; *) exit 1;; esac; done'
+        )
+        self._command("rm -f " + " ".join(shlex.quote(path) for path in files))
+        for directory in directories:
+            self._command(f"if [ -d {shlex.quote(directory)} ]; then rmdir {shlex.quote(directory)}; fi")
+        # Keep the journal until the last directory removal so an interrupted
+        # cleanup can be recognized on retry. A final empty root is also safe.
+        self._command(f"rm -f {shlex.quote(root + '/journal.tmp')} {shlex.quote(root + '/journal.json')}; rmdir {shlex.quote(root)}")
+
     def _archive(self) -> None:
         if self._exists(self.previous):
-            self._load_journal(self.previous)  # Never remove an unrelated directory.
-            self._command(f"rm -rf {shlex.quote(self.previous)}")
+            if self._exists(f"{self.previous}/journal.json"):
+                self._load_journal(self.previous)  # Never remove an unrelated directory.
+                self._remove_snapshot(self.previous)
+            else:
+                self._command(f"rmdir {shlex.quote(self.previous)}")
         self._command(f"mv {shlex.quote(self.root)} {shlex.quote(self.previous)}; sync")
 
     def prepare(self) -> None:
@@ -213,7 +242,7 @@ class DeploymentTransaction:
                         self.armed = True
                         self.rollback()
                 if phase in {"staging", "prepared"}:
-                    self._command(f"rm -rf {shlex.quote(self.root)}")
+                    self._remove_snapshot(self.root)
                 else:
                     self._archive()
         self.journal = {"format": 1, "transaction_id": self.token, "phase": "staging", "entries": []}
@@ -303,6 +332,14 @@ class DeploymentTransaction:
             self.resume_after_reboot()
         elif lock_state.returncode != 0:
             raise RuntimeError("Could not inspect deployment ownership for recovery")
+        # A failed copy can consume all remaining Flash/disk space. Free only
+        # known temporary replacement files before writing the recovery guard.
+        temporaries = [
+            str(PurePosixPath(t.destination).with_name(f".{PurePosixPath(t.destination).name}.deploy-new"))
+            for t in self.plan.uploads
+        ]
+        self._guard_paths([str(PurePosixPath(path).parent) for path in temporaries])
+        self._command("rm -f " + " ".join(shlex.quote(path) for path in temporaries))
         self._arm_guard()
         self.stop_runtime()
         self.journal["phase"] = "rolling_back"
