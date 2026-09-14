@@ -39,18 +39,15 @@ def parse_bootstrap_values(path: Path | None = None) -> dict[str, str]:
 
 def load_install_identity(path: Path | None = None) -> InstallIdentity:
     values = parse_bootstrap_values(path)
-    telemetry_raw = values.get("TELEMETRY", "").strip().lower()
-    telemetry_enabled = telemetry_raw != "false"
     return InstallIdentity(
         install_id=values.get("INSTALL_ID") or None,
-        telemetry_enabled=telemetry_enabled,
+        telemetry_enabled=False,
     )
 
 
-def render_bootstrap_text(install_id: str, *, telemetry_enabled: bool = True) -> str:
-    lines = [f"INSTALL_ID={install_id}"]
-    if not telemetry_enabled:
-        lines.append("TELEMETRY=false")
+def render_bootstrap_text(install_id: str, *, telemetry_enabled: bool = False) -> str:
+    # Keep old clients disabled when they read this fork's state file.
+    lines = [f"INSTALL_ID={install_id}", "TELEMETRY=false"]
     lines.append("")
     return "\n".join(lines)
 

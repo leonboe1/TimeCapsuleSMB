@@ -190,7 +190,7 @@ class AppApiTests(unittest.TestCase):
         )
         # This tripwire catches future tests that accidentally bypass the app-service telemetry mock.
         self._telemetry_urlopen = self._exit_stack.enter_context(
-            mock.patch("timecapsulesmb.telemetry.urllib.request.urlopen", side_effect=AssertionError("tests must not send telemetry"))
+            mock.patch("urllib.request.urlopen", side_effect=AssertionError("tests must not send telemetry"))
         )
         self._runtime_wait_sleep = self._exit_stack.enter_context(mock.patch("timecapsulesmb.services.runtime_verification.sleep"))
 

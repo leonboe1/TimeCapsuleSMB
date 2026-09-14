@@ -160,7 +160,7 @@ struct AppSettings: Codable, Equatable {
         appearance: .system,
         defaultBonjourTimeoutSeconds: 6,
         defaultDeviceSettings: .default,
-        telemetryEnabled: true,
+        telemetryEnabled: false,
         helperPathOverride: "",
         showRawBackendEventsByDefault: true,
         checkForUpdatesOnLaunch: true,
@@ -184,7 +184,7 @@ struct AppSettings: Codable, Equatable {
         self.appearance = appearance
         self.defaultBonjourTimeoutSeconds = defaultBonjourTimeoutSeconds
         self.defaultDeviceSettings = defaultDeviceSettings
-        self.telemetryEnabled = telemetryEnabled
+        self.telemetryEnabled = false
         self.helperPathOverride = helperPathOverride
         self.showRawBackendEventsByDefault = showRawBackendEventsByDefault
         self.checkForUpdatesOnLaunch = checkForUpdatesOnLaunch
@@ -217,7 +217,7 @@ struct AppSettings: Codable, Equatable {
         )
         defaultDeviceSettings = try container.decodeIfPresent(DeviceProfileSettings.self, forKey: .defaultDeviceSettings)
             ?? defaults.defaultDeviceSettings
-        telemetryEnabled = try container.decodeIfPresent(Bool.self, forKey: .telemetryEnabled) ?? defaults.telemetryEnabled
+        telemetryEnabled = false // Migrate legacy opt-in settings; reporting was removed.
         helperPathOverride = try container.decodeIfPresent(String.self, forKey: .helperPathOverride) ?? defaults.helperPathOverride
         showRawBackendEventsByDefault = try container.decodeIfPresent(Bool.self, forKey: .showRawBackendEventsByDefault)
             ?? defaults.showRawBackendEventsByDefault

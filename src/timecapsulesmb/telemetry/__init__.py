@@ -1,51 +1,17 @@
 from __future__ import annotations
 
-import json
-import os
 import platform
 import subprocess
-import threading
-import urllib.error
-import urllib.request
-import uuid
-from dataclasses import dataclass
-from datetime import datetime, timezone
 from pathlib import Path
 
 from timecapsulesmb.core.config import AppConfig
-from timecapsulesmb.core.release import CLI_VERSION, RELEASE_TAG, SAMBA_VERSION
-from timecapsulesmb.identity import load_install_identity
-
-
-SCHEMA_VERSION = 5
-DEFAULT_TELEMETRY_URL = "https://timecapsulesmb.jamesyc.com/v1/events"
-TELEMETRY_URL_ENV = "TCAPSULE_TELEMETRY_URL"
-TELEMETRY_TOKEN_ENV = "TCAPSULE_TELEMETRY_TOKEN"
-DEFAULT_TELEMETRY_TOKEN = "d65373762e893ae18c8aaa95a8f1b3a3464611f33b30983909543535fa8b0733"
-REQUEST_TIMEOUT_SECONDS = 10.0
-MAX_SEND_ATTEMPTS = 2
-
-
-@dataclass(frozen=True)
-class TelemetryContext:
-    install_id: str
-    cli_version: str
-    release_tag: str
-    samba_version: str
-    host_os: str
-    host_os_version: str
-    configure_id: str | None = None
-    device_model: str | None = None
-    device_syap: str | None = None
-    nbns_enabled: bool | None = None
 
 
 class TelemetryClient:
-    def __init__(self, *, endpoint: str, token: str | None, context: TelemetryContext | None, enabled: bool) -> None:
-        self.endpoint = endpoint
-        self.token = token
-        self.context = context
-        self.enabled = enabled and context is not None and bool(token)
+    """Compatibility sink for local operation instrumentation; never sends data."""
+
+    enabled = False
+    context = None
 
     @classmethod
     def from_config(
@@ -56,119 +22,11 @@ class TelemetryClient:
         bootstrap_path: Path | None = None,
         include_device_identity: bool = True,
     ) -> "TelemetryClient":
-        identity = load_install_identity(bootstrap_path)
-        endpoint = os.getenv(TELEMETRY_URL_ENV, DEFAULT_TELEMETRY_URL)
-        token = os.getenv(TELEMETRY_TOKEN_ENV, DEFAULT_TELEMETRY_TOKEN).strip() or None
-        if not identity.install_id:
-            return cls(endpoint=endpoint, token=token, context=None, enabled=False)
-        context = TelemetryContext(
-            install_id=identity.install_id,
-            cli_version=CLI_VERSION,
-            release_tag=RELEASE_TAG,
-            samba_version=SAMBA_VERSION,
-            host_os=detect_host_os(),
-            host_os_version=detect_host_os_version(),
-            configure_id=config.get("TC_CONFIGURE_ID") or None,
-            device_model=None,
-            device_syap=None,
-            nbns_enabled=nbns_enabled,
-        )
-        return cls(endpoint=endpoint, token=token, context=context, enabled=identity.telemetry_enabled)
+        # Do not collect host/device identity or honor legacy endpoint overrides.
+        return cls()
 
-    def emit(
-        self,
-        event: str,
-        *,
-        synchronous: bool = False,
-        operation: str | None = None,
-        phase: str | None = None,
-        operation_id: str | None = None,
-        entrypoint: str | None = None,
-        client: str | None = None,
-        options: dict[str, object] | None = None,
-        details: dict[str, object] | None = None,
-        **fields: object,
-    ) -> None:
-        if not self.enabled or self.context is None:
-            return
-        try:
-            inferred_operation, inferred_phase = infer_operation_phase(event)
-            operation = operation or inferred_operation
-            phase = phase or inferred_phase
-            payload: dict[str, object] = {
-                "schema_version": SCHEMA_VERSION,
-                "event": event,
-                "event_id": str(uuid.uuid4()),
-                "occurred_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                "install_id": self.context.install_id,
-                "cli_version": self.context.cli_version,
-                "release_tag": self.context.release_tag,
-                "samba_version": self.context.samba_version,
-                "host_os": self.context.host_os,
-                "host_os_version": self.context.host_os_version,
-            }
-            if operation:
-                payload["operation"] = operation
-            if phase:
-                payload["phase"] = phase
-            if operation_id:
-                payload["operation_id"] = operation_id
-            if entrypoint:
-                payload["entrypoint"] = entrypoint
-            if client:
-                payload["client"] = client
-            if self.context.configure_id:
-                payload["configure_id"] = self.context.configure_id
-            if self.context.device_model:
-                payload["device_model"] = self.context.device_model
-            if self.context.device_syap:
-                payload["device_syap"] = self.context.device_syap
-            if self.context.nbns_enabled is not None:
-                payload["nbns_enabled"] = self.context.nbns_enabled
-            if options is not None:
-                payload["options"] = options
-            if details is not None:
-                payload["details"] = details
-            for key, value in fields.items():
-                if value is not None:
-                    payload[key] = value
-            if synchronous:
-                self._send_payload(payload)
-                return
-            self._dispatch_payload_async(payload)
-        except Exception:
-            return
-
-    def _dispatch_payload_async(self, payload: dict[str, object]) -> None:
-        thread = threading.Thread(target=self._send_payload, args=(payload,), daemon=True)
-        thread.start()
-
-    def _send_payload(self, payload: dict[str, object]) -> None:
-        try:
-            body = json.dumps(payload, default=str).encode("utf-8")
-        except Exception:
-            return
-        for attempt in range(MAX_SEND_ATTEMPTS):
-            try:
-                request = urllib.request.Request(
-                    self.endpoint,
-                    data=body,
-                    headers={
-                        "Content-Type": "application/json",
-                        "Authorization": f"Bearer {self.token}",
-                    },
-                    method="POST",
-                )
-                with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS):
-                    return
-            except urllib.error.HTTPError as exc:
-                if exc.code < 500 or attempt + 1 >= MAX_SEND_ATTEMPTS:
-                    return
-            except (OSError, urllib.error.URLError, ValueError):
-                if attempt + 1 >= MAX_SEND_ATTEMPTS:
-                    return
-            except Exception:
-                return
+    def emit(self, event: str, **fields: object) -> None:
+        pass
 
 
 def build_device_os_version(os_name: str | None, os_release: str | None, arch: str | None) -> str | None:

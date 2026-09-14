@@ -117,7 +117,7 @@ struct AppSettingsView: View {
                 }
 
                 SettingsFormSection(title: L10n.string("app_settings.section.privacy"), contentWidth: contentWidth) {
-                    Toggle(L10n.string("app_settings.telemetry_enabled"), isOn: $editor.draft.telemetryEnabled)
+                    Text(L10n.string("backend.summary.telemetry_disabled"))
                 }
 
                 SettingsFormSection(title: L10n.string("app_settings.section.time_machine"), contentWidth: contentWidth) {
