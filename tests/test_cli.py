@@ -8753,7 +8753,7 @@ class CliTests(unittest.TestCase):
     def test_fsck_yes_reboots_and_waits_by_default(self) -> None:
         output = io.StringIO()
         values = self.make_valid_env()
-        run_result = mock.Mock(stdout="--- fsck_hfs /dev/dk2 ---\nOK\n--- reboot ---\n", returncode=255)
+        run_result = mock.Mock(stdout="--- fsck_hfs /dev/dk2 ---\nOK\n--- reboot ---\n", returncode=0)
         with ExitStack() as stack:
             stack.enter_context(mock.patch("timecapsulesmb.cli.fsck.load_env_config", return_value=self.make_app_config(values)))
             self._patch_mast_volume_flow(stack, "fsck", mounted_volumes=(self._mast_volume("dk2"),))
@@ -8775,8 +8775,8 @@ class CliTests(unittest.TestCase):
         self.assertIn("^afpserver$", remote_cmd)
         self.assertIn("^wcifsnd$", remote_cmd)
         self.assertIn("^wcifsfs$", remote_cmd)
-        self.assertIn("umount -f /Volumes/dk2", remote_cmd)
-        self.assertIn("fsck_hfs -fy /dev/dk2", remote_cmd)
+        self.assertIn("repair_mountpoint=/Volumes/dk2", remote_cmd)
+        self.assertIn("repair_device=/dev/dk2", remote_cmd)
         self.assertIn("exec </dev/null >/dev/null 2>&1", remote_cmd)
         self.assertIn("/bin/sync; /bin/sleep 1;", remote_cmd)
         self.assertIn("/sbin/shutdown -r now", remote_cmd)
@@ -8821,7 +8821,7 @@ class CliTests(unittest.TestCase):
             "TC_PASSWORD": "pw",
             "TC_SSH_OPTS": "-o foo",
         }
-        run_result = mock.Mock(stdout="--- fsck_hfs /dev/dk2 ---\nOK\n--- reboot ---\n", returncode=255)
+        run_result = mock.Mock(stdout="--- fsck_hfs /dev/dk2 ---\nOK\n--- reboot ---\n", returncode=0)
         with ExitStack() as stack:
             stack.enter_context(mock.patch("timecapsulesmb.cli.fsck.load_env_config", return_value=self.make_app_config(values)))
             self._patch_mast_volume_flow(stack, "fsck", mounted_volumes=(self._mast_volume("dk2"),))
@@ -8831,6 +8831,20 @@ class CliTests(unittest.TestCase):
                 rc = fsck.main(["--yes", "--no-wait"])
         self.assertEqual(rc, 0)
         observe_mock.assert_not_called()
+
+    def test_fsck_failure_never_reports_a_successful_reboot(self) -> None:
+        for status in (8, 255):
+            with self.subTest(status=status), ExitStack() as stack:
+                output = io.StringIO()
+                stack.enter_context(mock.patch("timecapsulesmb.cli.fsck.load_env_config", return_value=self.make_app_config(self.make_valid_env())))
+                self._patch_mast_volume_flow(stack, "fsck", mounted_volumes=(self._mast_volume("dk2"),))
+                stack.enter_context(mock.patch("timecapsulesmb.cli.fsck.run_ssh", return_value=mock.Mock(stdout="repair failed", returncode=status)))
+                observe = stack.enter_context(mock.patch("timecapsulesmb.cli.fsck.observe_reboot_cycle"))
+                with redirect_stdout(output):
+                    rc = fsck.main(["--yes", "--no-wait"])
+                self.assertEqual(rc, 1)
+                observe.assert_not_called()
+                self.assertIn("Disk repair failed", output.getvalue())
 
     def test_fsck_no_reboot_omits_reboot_and_waits(self) -> None:
         output = io.StringIO()
@@ -8937,8 +8951,8 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(rc, 0)
         remote_cmd = run_ssh_mock.call_args.args[1]
-        self.assertIn("umount -f /Volumes/dk5", remote_cmd)
-        self.assertIn("fsck_hfs -fy /dev/dk5", remote_cmd)
+        self.assertIn("repair_mountpoint=/Volumes/dk5", remote_cmd)
+        self.assertIn("repair_device=/dev/dk5", remote_cmd)
         text = output.getvalue()
         self.assertIn("Mounted HFS volumes:", text)
         self.assertIn("2. /dev/dk5 on /Volumes/dk5 (External, external)", text)
@@ -8980,13 +8994,13 @@ class CliTests(unittest.TestCase):
                 rc = fsck.main(["--yes", "--no-reboot", "--volume", "dk5"])
 
         self.assertEqual(rc, 0)
-        self.assertIn("fsck_hfs -fy /dev/dk5", run_ssh_mock.call_args.args[1])
+        self.assertIn("repair_device=/dev/dk5", run_ssh_mock.call_args.args[1])
         self.assertNotIn("Mounted HFS volumes:", output.getvalue())
 
     def test_fsck_reboot_no_down_emits_failure_stage(self) -> None:
         output = io.StringIO()
         values = self.make_valid_env()
-        run_result = mock.Mock(stdout="--- fsck_hfs /dev/dk2 ---\nOK\n--- reboot ---\n", returncode=255)
+        run_result = mock.Mock(stdout="--- fsck_hfs /dev/dk2 ---\nOK\n--- reboot ---\n", returncode=0)
         with ExitStack() as stack:
             stack.enter_context(mock.patch("timecapsulesmb.cli.fsck.load_env_config", return_value=self.make_app_config(values)))
             self._patch_mast_volume_flow(stack, "fsck", mounted_volumes=(self._mast_volume("dk2"),))
@@ -9006,7 +9020,7 @@ class CliTests(unittest.TestCase):
     def test_fsck_reboot_timeout_emits_failure_stage(self) -> None:
         output = io.StringIO()
         values = self.make_valid_env()
-        run_result = mock.Mock(stdout="--- fsck_hfs /dev/dk2 ---\nOK\n--- reboot ---\n", returncode=255)
+        run_result = mock.Mock(stdout="--- fsck_hfs /dev/dk2 ---\nOK\n--- reboot ---\n", returncode=0)
         with ExitStack() as stack:
             stack.enter_context(mock.patch("timecapsulesmb.cli.fsck.load_env_config", return_value=self.make_app_config(values)))
             self._patch_mast_volume_flow(stack, "fsck", mounted_volumes=(self._mast_volume("dk2"),))

@@ -109,12 +109,14 @@ def main(argv: Optional[list[str]] = None) -> int:
         if proc.stdout:
             print(proc.stdout, end="" if proc.stdout.endswith("\n") else "\n")
 
-        if args.no_reboot:
-            if proc.returncode == 0:
-                command_context.succeed()
-                return 0
-            command_context.fail_with_error("fsck_hfs command failed.")
+        if proc.returncode != 0:
+            message = f"Disk repair failed (status {proc.returncode}); reboot was not confirmed."
+            print(message)
+            command_context.fail_with_error(message)
             return 1
+        if args.no_reboot:
+            command_context.succeed()
+            return 0
 
         command_context.update_fields(reboot_was_attempted=True)
         if args.no_wait:
