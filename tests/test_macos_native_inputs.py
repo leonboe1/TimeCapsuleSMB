@@ -115,3 +115,14 @@ def test_copy_closure_rewrites_recursive_dependencies_and_records_hashes(native,
     assert all(native.digest(root / r["input_path"]) == r["input_sha256"] for r in records)
     assert len(changes) == 2
     assert all(cmd[3].startswith("@loader_path/") for cmd in changes)
+
+
+@pytest.mark.parametrize("minimum,accepted", [("14.0", True), ("14.8", True), ("14.8.1", False), ("15.0", False)])
+def test_macos_minimum_matches_actual_library_requirements(native, monkeypatch, tmp_path, minimum, accepted):
+    monkeypatch.setattr(native.subprocess, "check_output", lambda *args, **kwargs: f"cmd LC_BUILD_VERSION\n minos {minimum}\n")
+    files = [{"output_path": "library.dylib"}]
+    if accepted:
+        native.validate_minimum_macos(tmp_path, files, "14.8")
+    else:
+        with pytest.raises(RuntimeError, match="exceeds the declared"):
+            native.validate_minimum_macos(tmp_path, files, "14.8")

@@ -3,7 +3,7 @@
   "reviewed": "2026-09-14",
   "architectures": {
     "arm64": {
-      "minimum_macos": "14.0",
+      "minimum_macos": "14.8",
       "publisher_index": "https://ghcr.io/v2/homebrew/core/samba/manifests/4.24.7",
       "publisher_index_sha256": "483950a07c11109980cef2d63d423e0ea48a95a57db8c0e4dab3f44473428044",
       "bottle_tag": "arm64_sonoma",

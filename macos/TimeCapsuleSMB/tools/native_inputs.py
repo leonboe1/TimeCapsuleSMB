@@ -22,6 +22,7 @@ MANIFEST = Path(__file__).with_name("native-inputs.json")
 REPO = Path(__file__).resolve().parents[3]
 MAX_ARCHIVE_SIZE = 512 * 1024 * 1024
 MAX_EXTRACTED_SIZE = 1024 * 1024 * 1024
+MINIMUM_MACOS_VERSION = "14.8"
 
 
 def digest(path: Path) -> str:
@@ -217,11 +218,26 @@ def copy_closure(sources: dict, app: Path, kegs: dict, root: Path, api) -> list[
     return records
 
 
+def validate_minimum_macos(app: Path, files: list[dict], minimum: str) -> None:
+    def version(value):
+        parts = tuple(map(int, value.split(".")))
+        return parts + (0,) * (3 - len(parts))
+    for record in files:
+        path = app / record["output_path"]
+        output = subprocess.check_output(["otool", "-l", str(path)], text=True)
+        values = re.findall(r"\bminos ([0-9.]+)", output)
+        values += re.findall(r"cmd LC_VERSION_MIN_MACOSX\s+cmdsize \d+\s+version ([0-9.]+)", output)
+        if not values or any(version(value) > version(minimum) for value in values):
+            raise RuntimeError(f"Native dependency exceeds the declared macOS {minimum} minimum: {path.name}: {values}")
+
+
 def bundle(app: Path, architectures: tuple[str, ...], cache: Path, api) -> None:
     manifest = json.loads(MANIFEST.read_text())
     if len(architectures) != 1 or architectures[0] not in manifest["architectures"]:
         raise RuntimeError("No reviewed native dependency set for this architecture; currently only arm64 packaging is available")
     arch = architectures[0]
+    if manifest["architectures"][arch]["minimum_macos"] != MINIMUM_MACOS_VERSION:
+        raise RuntimeError("Native manifest and app minimum macOS versions disagree")
     for name in os.environ:
         if name.startswith(("TCAPSULE_PACKAGE_SSHPASS", "TCAPSULE_PACKAGE_SMBCLIENT")):
             raise RuntimeError("Local native-tool overrides are disabled; packaging uses the reviewed input manifest")
@@ -239,6 +255,7 @@ def bundle(app: Path, architectures: tuple[str, ...], cache: Path, api) -> None:
             kegs[record["name"]] = keg
         sshpass, build = build_sshpass(manifest["sshpass"], cache, root / "sshpass", architectures)
         files = copy_closure({"smbclient": kegs["samba"] / "bin/smbclient", "sshpass": sshpass[arch]}, app, kegs, root, api)
+        validate_minimum_macos(app, files, MINIMUM_MACOS_VERSION)
         # Only this layer changed. Python was already finalized and signed;
         # signing its nested executables again can reinterpret them as bundles.
         api.ad_hoc_codesign_macho_roots([app / "Contents/Resources/Tools/bin", app / "Contents/Frameworks"])

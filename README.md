@@ -76,7 +76,7 @@ Also, if you are an expert and want to DIY the install, you can copy the binary 
 
 ## Quick Start (macOS app)
 
-1. On an Apple Silicon Mac with macOS 14+ and Xcode build tools, check out `security/harden-fork` and run `python3 macos/TimeCapsuleSMB/tools/package_app.py --configuration release --arch native --full-validation --zip`. Packaging downloads pinned PSF/PyPI/Homebrew inputs, verifies their hashes, and builds patched sshpass locally. It does not use your Homebrew executables. Intel/universal packaging is disabled until its complete native dependency set is reviewed. No hardened release is published yet; successful CI runs retain their exact app ZIP and provenance JSON for 30 days.
+1. On an Apple Silicon Mac with macOS 14.8+ and Xcode build tools, check out `security/harden-fork` and run `python3 macos/TimeCapsuleSMB/tools/package_app.py --configuration release --arch native --full-validation --zip`. Packaging downloads pinned PSF/PyPI/Homebrew inputs, verifies their hashes, and builds patched sshpass locally. It does not use your Homebrew executables. Intel/universal packaging is disabled until its complete native dependency set is reviewed. No hardened release is published yet; successful CI runs retain their exact app ZIP and provenance JSON for 30 days.
 2. Open your locally built app. Keep macOS Gatekeeper enabled.
 3. Make sure *Local Network* permissions is granted (System Settings → Privacy & Security → Local Network → make sure TimeCapsuleSMB is allowed, then quit/reopen the app). Close and re-open the app after granting permissions.
 4. Click "Add Device" on the left sidebar, and select your device. 

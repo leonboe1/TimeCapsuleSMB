@@ -211,7 +211,7 @@ def write_info_plist(contents_dir: Path, *, icon_name: str | None = None) -> Non
         "CFBundlePackageType": "APPL",
         "CFBundleShortVersionString": APP_VERSION,
         "CFBundleVersion": APP_VERSION_CODE,
-        "LSMinimumSystemVersion": "14.0",
+        "LSMinimumSystemVersion": native_inputs.MINIMUM_MACOS_VERSION,
         "NSBonjourServices": BONJOUR_SERVICE_TYPES,
         "NSHighResolutionCapable": True,
         "NSLocalNetworkUsageDescription": "TimeCapsuleSMB discovers and connects to Apple AirPort devices on your local network.",
@@ -1554,7 +1554,7 @@ def write_package_provenance(app: Path, zip_path: Path | None, architectures: tu
     dirty = bool(subprocess.run(["git", "status", "--porcelain"], cwd=REPO_ROOT, capture_output=True, text=True, check=True).stdout)
     locks = {name: sha256_file(REPO_ROOT / name) for name in ("requirements.txt", "requirements-build.txt", "requirements-bootstrap.txt")}
     record = {"schema_version": 1, "git_commit": commit, "git_dirty": dirty,
-              "architectures": architectures, "minimum_macos": "14.0",
+              "architectures": architectures, "minimum_macos": native_inputs.MINIMUM_MACOS_VERSION,
               "python": {"version": PYTHON_RUNTIME_VERSION, "url": PYTHON_RUNTIME_URL, "sha256": PYTHON_RUNTIME_SHA256},
               "build_pip": {"version": PIP_VERSION, "url": PIP_URL, "sha256": PIP_SHA256},
               "requirements_sha256": locks, "native_inputs": inputs, "native_build": native,
