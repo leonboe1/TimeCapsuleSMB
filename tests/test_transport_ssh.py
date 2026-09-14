@@ -28,6 +28,17 @@ class DecodeTrapBytes(bytes):
 
 
 class SSHTransportTests(unittest.TestCase):
+    def test_uncertain_exit_is_an_error_even_when_status_is_not_checked(self) -> None:
+        connection = ssh_transport.SshConnection("host", "", "")
+        for status in (255, 143, -15):
+            with self.subTest(status=status), mock.patch.object(ssh_transport, "_connection_ssh_args", return_value=[]):
+                with mock.patch.object(ssh_transport, "_spawn_with_password", return_value=(status, "")):
+                    with self.assertRaises(transport_errors.SshNetworkError):
+                        ssh_transport.run_ssh(connection, "mount probe", check=False)
+                with mock.patch.object(ssh_transport.subprocess, "run", return_value=subprocess.CompletedProcess([], status, b"", b"")):
+                    with self.assertRaises(transport_errors.SshNetworkError):
+                        ssh_transport.run_ssh_capture_bytes(connection, "read probe")
+
     def setUp(self) -> None:
         ssh_transport._ssh_option_supported.cache_clear()
         ssh_transport._local_ssh_macs.cache_clear()

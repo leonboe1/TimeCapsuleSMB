@@ -21,7 +21,7 @@ from timecapsulesmb.deploy.dry_run import (
 )
 from timecapsulesmb.deploy.executor import flush_remote_filesystem_writes, run_remote_actions, upload_deployment_payload
 from timecapsulesmb.deploy.commands import RemoteAction, StopProcessAction
-from timecapsulesmb.deploy.transaction import DeploymentTransaction
+from timecapsulesmb.deploy.transaction import DeploymentRecoveryRequired, DeploymentTransaction
 from timecapsulesmb.deploy.planner import (
     BINARY_MDNS_SOURCE,
     BINARY_NBNS_SOURCE,
@@ -886,6 +886,8 @@ def upload_and_verify_deployment_payload(
                     result="failure",
                     error_type=type(exc).__name__,
                 )
+            if isinstance(exc, DeploymentRecoveryRequired):
+                raise  # Preserve the lock-retention instructions and recovery policy.
             if _payload_upload_timed_out(exc, active_upload, plan):
                 raise DeployDeviceError(PAYLOAD_UPLOAD_TIMEOUT_MESSAGE, code="payload_upload_timeout") from exc
             raise
@@ -1009,7 +1011,11 @@ def complete_deployment_after_upload(
         # Archiving cannot invalidate an already healthy runtime. If it fails,
         # leave the installed journal in place for the next deployment.
         if transaction is not None and result.verified:
-            transaction.finalize()
+            try:
+                transaction.finalize()
+            except BaseException as error:
+                transaction.retain_if_uncertain(error)
+                raise
         return result
     finally:
         if transaction is not None:

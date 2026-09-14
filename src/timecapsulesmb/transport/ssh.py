@@ -215,7 +215,7 @@ def _spawn_with_password(cmd: list[str], password: str, *, timeout: int, timeout
         except Exception:
             pass
 
-    rc = child.exitstatus if child.exitstatus is not None else (child.signalstatus or 1)
+    rc = child.exitstatus if child.exitstatus is not None else (128 + child.signalstatus if child.signalstatus else 255)
     return rc, "".join(output)
 
 
@@ -423,6 +423,8 @@ def run_ssh(connection: SshConnection, remote_cmd: str, *, check: bool = True, t
     client_error = classify_ssh_client_error(stdout)
     if client_error:
         raise client_error
+    if rc < 0 or rc >= 128:
+        raise SshNetworkError(f"SSH ended without reliable remote completion (rc={rc})")
     stdout = _strip_ssh_client_noise(stdout)
     if check and rc != 0:
         raise SshError(stdout.strip() or f"ssh command failed with rc={rc}")
@@ -478,6 +480,8 @@ def _run_piped_ssh(
     client_error = classify_ssh_client_error(combined_text)
     if client_error:
         raise client_error
+    if proc.returncode < 0 or proc.returncode >= 128:
+        raise SshNetworkError(f"SSH ended without reliable remote completion (rc={proc.returncode})")
     return proc
 
 

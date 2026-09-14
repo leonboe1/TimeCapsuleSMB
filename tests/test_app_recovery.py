@@ -5,6 +5,13 @@ import unittest
 from timecapsulesmb.app.recovery import recovery_for
 
 
+def test_deployment_uncertainty_has_no_automatic_retry_or_reboot_action():
+    recovery = recovery_for("deploy", "deployment_recovery_required", stage="upload_smbd")
+    assert not recovery["retryable"]
+    assert recovery["action_ids"] == []
+    assert recovery["suggested_operation"] is None
+    assert "Confirm that all clients and remote operations have stopped." in recovery["actions"]
+
 class AppRecoveryTests(unittest.TestCase):
     def test_configure_acp_port_probe_recovery_warns_about_vpns(self) -> None:
         recovery = recovery_for("configure", "remote_error", stage="acp_port_probe")

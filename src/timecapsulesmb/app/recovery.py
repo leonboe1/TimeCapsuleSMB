@@ -37,6 +37,16 @@ class RecoveryInfo:
 
 
 _DEFAULTS: dict[str, RecoveryInfo] = {
+    "deployment_recovery_required": RecoveryInfo(
+        "Deployment recovery is deferred",
+        "Remote work may still be running. The maintenance lock and recovery files are retained.",
+        (
+            "Confirm that all clients and remote operations have stopped.",
+            "Do not reboot during an active repair or write.",
+            "Once remote work has stopped, reboot to clear the RAM lock and rerun deploy.",
+        ),
+        retryable=False,
+    ),
     "invalid_request": RecoveryInfo(
         "Invalid request",
         "The helper request was malformed or had invalid parameter types.",

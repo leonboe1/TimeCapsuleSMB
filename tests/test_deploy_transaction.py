@@ -7,13 +7,15 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import time
 from unittest import mock
 
 import pytest
 
 from timecapsulesmb.deploy.executor import upload_deployment_payload
 from timecapsulesmb.deploy.planner import build_deployment_plan
-from timecapsulesmb.deploy.transaction import BOOT_GUARD, DeploymentTransaction
+from timecapsulesmb.deploy.transaction import BOOT_GUARD, DeploymentRecoveryRequired, DeploymentTransaction
+from timecapsulesmb.transport.errors import SshCommandTimeout, SshNetworkError, ScpError
 from timecapsulesmb.device.storage import PayloadHome
 from timecapsulesmb.services.deploy import complete_deployment_after_upload
 from timecapsulesmb.services.deploy import DeployRuntimeConfig, upload_and_verify_deployment_payload
@@ -131,6 +133,138 @@ def test_uninstall_cannot_erase_active_deployment_recovery(device, monkeypatch):
     transaction.rollback()
     assert_recovered(device)
     transaction.release()
+
+
+def test_surviving_upload_blocks_competing_mutations_after_client_timeout(device, monkeypatch, tmp_path):
+    from timecapsulesmb.deploy import executor, transaction as transaction_module
+    from timecapsulesmb.deploy.commands import RemovePathAction
+    from timecapsulesmb.device import maintenance_lock
+
+    plan, _, old, metadata, connection, _, _ = device
+    lock = Path(plan.flash_targets["rc.local"]).parent.parent / "Memory/.tcapsulesmb-deploy-lock"
+    monkeypatch.setattr(maintenance_lock, "MAINTENANCE_LOCK", str(lock))
+    monkeypatch.setattr(executor, "run_ssh", transaction_module.run_ssh)
+    gate = tmp_path / "upload-gate"
+    gate.touch()
+    started = tmp_path / "upload-started"
+    child = None
+
+    def upload(_connection, source, destination, **kwargs):
+        nonlocal child
+        child = subprocess.Popen([
+            "/bin/sh", "-c",
+            'touch "$1"; while test -f "$2"; do sleep 0.02; done; cp "$3" "$4"',
+            "remote-upload", str(started), str(gate), str(source), destination,
+        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        deadline = time.monotonic() + 5
+        while not started.exists() and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert started.exists()
+        raise SshCommandTimeout("client timed out; remote upload survives")
+
+    monkeypatch.setattr(transaction_module, "run_scp", upload)
+    try:
+        with pytest.raises(DeploymentRecoveryRequired, match="Remote work may still be running"):
+            deploy(device)
+        assert child.poll() is None
+        assert lock.is_dir()
+        assert maintenance_lock.active_lock(connection) is None
+        journal = Path(plan.payload_dir) / ".deploy-transaction/journal.json"
+        retained = journal.read_bytes()
+        sentinel = tmp_path / "competing-mutation"
+        sentinel.touch()
+        for other in (connection, SshConnection(connection.host, "", "")):
+            with pytest.raises(RuntimeError, match="maintenance lock"):
+                executor.run_remote_actions(other, [RemovePathAction(str(sentinel))])
+        assert sentinel.exists()
+        with pytest.raises(RuntimeError, match="maintenance lock"):
+            deploy(device)
+        assert journal.read_bytes() == retained
+        assert all(path.read_bytes() == content for path, content in old.items())
+        assert metadata.read_bytes() == b"irreplaceable metadata\0\xff"
+    finally:
+        gate.unlink(missing_ok=True)
+        if child is not None:
+            stdout, stderr = child.communicate(timeout=10)
+            assert child.returncode == 0, (stdout, stderr)
+
+
+@pytest.mark.parametrize("error", [
+    SshCommandTimeout("timeout"), SshNetworkError("connection lost"), ScpError("upload failed"),
+    subprocess.TimeoutExpired("ssh", 1), TimeoutError("timeout"),
+    KeyboardInterrupt(), SystemExit(1), subprocess.CalledProcessError(255, "ssh"),
+])
+def test_uncertain_failure_never_attempts_rollback_or_releases_remote_lock(device, error):
+    from timecapsulesmb.device.maintenance_lock import active_lock
+
+    plan, _, _, _, connection, stop, _ = device
+    transaction = DeploymentTransaction(plan, connection, stop)
+    transaction.prepare()
+    transaction.armed = True
+    wrapped = RuntimeError("outer operation failed")
+    wrapped.__cause__ = error
+    with mock.patch.object(transaction, "rollback") as rollback:
+        with pytest.raises(DeploymentRecoveryRequired):
+            try:
+                transaction.rollback_after_error(wrapped)
+            finally:
+                transaction.release()
+        rollback.assert_not_called()
+    assert Path(transaction.lock).is_dir()
+    assert active_lock(connection) is None
+
+
+@pytest.mark.parametrize("phase", ["commit", "post_upload", "activation", "finalize", "rollback", "previous_install"])
+def test_uncertain_failure_retains_journal_across_deployment_phases(device, monkeypatch, phase):
+    plan, sources, _, _, connection, stop, _ = device
+    error = SshCommandTimeout("remote work may still run")
+    if phase == "commit":
+        transaction = DeploymentTransaction(plan, connection, stop)
+        transaction.prepare()
+        transaction.stage(sources)
+        monkeypatch.setattr(DeploymentTransaction, "_arm_guard", mock.Mock(side_effect=error))
+        operation = lambda: transaction.commit()
+    else:
+        transaction = deploy(device)
+        if phase == "previous_install":
+            transaction.release()
+            monkeypatch.setattr(DeploymentTransaction, "verify_installed", mock.Mock(side_effect=error))
+            operation = lambda: deploy(device)
+        elif phase == "post_upload":
+            prepared = mock.Mock(plan=plan, payload_home=PayloadHome(plan.volume_root, plan.device_path, ".samba4"))
+            operation = lambda: upload_and_verify_deployment_payload(
+                AppConfig.from_values({}), connection, prepared, DeployRuntimeConfig(nbns_enabled=False),
+                run_remote_actions_func=mock.Mock(side_effect=error),
+                upload_payload_func=lambda *a, **k: transaction,
+            )
+        elif phase == "rollback":
+            monkeypatch.setattr(transaction, "_arm_guard", mock.Mock(side_effect=error))
+            operation = lambda: transaction.rollback_after_error(RuntimeError("runtime unhealthy"))
+        else:
+            monkeypatch.setattr("timecapsulesmb.services.deploy._complete_deployment_after_upload",
+                                mock.Mock(side_effect=error) if phase == "activation" else mock.Mock(return_value=mock.Mock(verified=True)))
+            if phase == "finalize":
+                monkeypatch.setattr(transaction, "_archive", mock.Mock(side_effect=error))
+            operation = lambda: complete_deployment_after_upload(connection, mock.Mock(), no_wait=False, transaction=transaction)
+    journal = Path(transaction.root) / "journal.json"
+    rollback = mock.Mock(side_effect=AssertionError("must not roll back after uncertain completion"))
+    if phase != "rollback":
+        monkeypatch.setattr(DeploymentTransaction, "rollback", rollback)
+    with pytest.raises(DeploymentRecoveryRequired):
+        try:
+            operation()
+        except BaseException as caught:
+            # commit() itself is owned by deploy_transaction's outer handler.
+            if phase == "commit":
+                transaction.rollback_after_error(caught)
+            raise
+        finally:
+            transaction.release()
+    assert Path(transaction.lock).is_dir()
+    assert journal.is_file()
+    assert device[3].read_bytes() == b"irreplaceable metadata\0\xff"
+    if phase != "rollback":
+        rollback.assert_not_called()
 
 
 @pytest.mark.parametrize("failed_index", range(11))
@@ -338,6 +472,25 @@ def test_post_upload_verification_failure_rolls_back_and_releases_lock(device):
         )
     assert_recovered(device)
     assert not Path(transaction.lock).exists()
+
+
+def test_upload_wrapper_preserves_deferred_recovery_policy(device):
+    plan = device[0]
+    prepared = mock.Mock(plan=plan, payload_home=PayloadHome(plan.volume_root, plan.device_path, ".samba4"))
+    error = DeploymentRecoveryRequired("Remote work may still be running")
+    error.__cause__ = SshCommandTimeout("upload timed out")
+
+    def upload(plan, *, on_uploading, **kwargs):
+        on_uploading(plan.uploads[0])
+        raise error
+
+    with pytest.raises(DeploymentRecoveryRequired) as caught:
+        upload_and_verify_deployment_payload(
+            AppConfig.from_values({}), device[4], prepared, DeployRuntimeConfig(nbns_enabled=False),
+            upload_payload_func=upload,
+        )
+    assert caught.value is error
+    assert caught.value.code == "deployment_recovery_required"
 
 
 def test_uninstall_snapshot_cleanup_allows_reinstall_and_retains_metadata(device):

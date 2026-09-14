@@ -12,12 +12,15 @@ import json
 import logging
 from pathlib import Path, PurePosixPath
 import shlex
+import subprocess
 import uuid
 from typing import Callable, Mapping
 
 from timecapsulesmb.deploy.planner import DeploymentPlan, FileTransfer
 from timecapsulesmb.device.storage import ensure_volume_root_mounted_conn
 from timecapsulesmb.device.maintenance_lock import MaintenanceLock
+from timecapsulesmb.device.errors import DeviceError
+from timecapsulesmb.transport.errors import TransportError
 from timecapsulesmb.transport.ssh import SshConnection, run_scp, run_ssh, run_ssh_capture_bytes
 
 
@@ -34,6 +37,29 @@ BOOT_GUARD = (
 
 def _digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+class DeploymentRecoveryRequired(DeviceError):
+    code = "deployment_recovery_required"
+
+
+def _remote_outcome_uncertain(error: BaseException) -> bool:
+    # Transport errors do not reliably distinguish a completed remote failure
+    # from a surviving command. Include wrapped failures and cancellation.
+    pending = [error]
+    seen: set[int] = set()
+    while pending:
+        current = pending.pop()
+        if id(current) in seen:
+            continue
+        seen.add(id(current))
+        if (not isinstance(current, Exception)
+                or isinstance(current, (TransportError, TimeoutError, ConnectionError, subprocess.TimeoutExpired))
+                or isinstance(current, subprocess.CalledProcessError)
+                and (current.returncode < 0 or current.returncode >= 128)):
+            return True
+        pending.extend(e for e in (current.__cause__, current.__context__) if e is not None)
+    return False
 
 
 class DeploymentTransaction(MaintenanceLock):
@@ -202,7 +228,8 @@ class DeploymentTransaction(MaintenanceLock):
                 elif phase == "installed":
                     try:
                         self.verify_installed()
-                    except Exception:
+                    except Exception as error:
+                        self.retain_if_uncertain(error)
                         self.armed = True
                         self.rollback()
                 if phase in {"staging", "prepared"}:
@@ -319,15 +346,29 @@ class DeploymentTransaction(MaintenanceLock):
         self._write_journal()
         self.armed = False
 
+    def defer_recovery(self, error: BaseException) -> None:
+        # Forget only this client's lease. In particular, a surrounding finally
+        # must not reconnect and remove the remote lock or attempt more writes.
+        self.forget()
+        raise DeploymentRecoveryRequired(
+            "Deployment stopped; automatic recovery and lock removal are deferred. "
+            "Remote work may still be running. Confirm that all clients and remote "
+            "operations have stopped before rebooting to clear the RAM lock and "
+            "rerunning tcapsule deploy. Do not reboot during an active repair or write. "
+            f"Recovery files, if created, remain at {self.root}."
+        ) from error
+
+    def retain_if_uncertain(self, error: BaseException) -> None:
+        if self.reboot_pending or _remote_outcome_uncertain(error):
+            self.defer_recovery(error)
+
     def rollback_after_error(self, error: BaseException) -> None:
+        self.retain_if_uncertain(error)
         was_armed = self.armed
         try:
             self.rollback()
-        except Exception as recovery_error:
-            raise RuntimeError(
-                f"Deployment failed and recovery could not finish ({recovery_error}). "
-                f"Recovery files remain at {self.root}; reconnect and rerun tcapsule deploy."
-            ) from error
+        except BaseException as recovery_error:
+            self.defer_recovery(recovery_error)
         if was_armed:
             self.report(
                 "Previous program files were restored. Managed startup remains disabled to avoid "
