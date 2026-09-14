@@ -15,9 +15,9 @@ AirPort Extreme models with attached USB storage are supported by the same deplo
 
 #### Is this safe to use?
 
-Yep. This doesn't touch anything that will permanently brick a Time Capsule for 5th Gen devices. This also does not delete any of your previous data on the hard disk.
+This is experimental software running with administrator privileges on old hardware. The hardened branch has automated regression tests and rebuilt binaries, but has not yet been validated on actual Time Capsule hardware. Normal deployment does not format the disk or intentionally delete existing backups. That does not guarantee data integrity, uninterrupted Wi-Fi, or continued use of an existing Time Machine backup. Keep a separate copy of irreplaceable data and test backup and restore first.
 
-The `flash` boot hook install (for 1-4th gen devices) is the only risky part. It backs up a copy of your flash, but be careful- if the device loses power while flashing, it can brick the device. 
+Firmware flashing can make the device unbootable if interrupted. Disk repair changes filesystem structures and can lose damaged files; ordinary runtime bugs, device resets, or power loss can also disrupt sharing and backups.
 
 #### Will installing TimeCapsuleSMB overwrite my existing backups?
 
@@ -193,11 +193,9 @@ Alternatively:
 
 #### The Time Capsule reset itself!
 
-Unfortunately, there are some report of the device resetting itself during a `deploy`/Install. This appears to be a rare side effect. 
+Upstream [issue 177](https://github.com/jamesyc/TimeCapsuleSMB/issues/177) reports settings resets during installation, sometimes requiring a power cycle and reconfiguration in AirPort Utility. This may disrupt Wi-Fi, routing, and disk sharing. The cause is unresolved, and this fork cannot claim to prevent it or guarantee that it is harmless.
 
-The good news is, although this is scary, it's harmless and usually only happens once. You can run `deploy`/Install again after it resets, and it should work fine. 
-
-For more information, see https://github.com/jamesyc/TimeCapsuleSMB/issues/177
+If it happens, restore the device’s network and disk-sharing settings and verify access to your backups before attempting another installation. Preserve any available logs for diagnosis.
 
 #### I get a "MaSt" error
 
@@ -339,7 +337,7 @@ To remove TimeCapsuleSMB:
 .venv/bin/tcapsule uninstall
 ```
 
-This removes the managed payload and boot files. After a reboot, your Time Capsule will be restored to its factory condition (though Apple SMB/AFP settings may vary).
+This removes managed programs and boot files while retaining backups and `.samba4/private`, including persistent file attributes in `xattr.tdb`. Do not delete the entire `.samba4` directory. Uninstall is not a factory reset or an exact undo of SSH settings, a separately flashed firmware boot hook, changes to shared files, or the Mac’s Time Machine destination. After reboot, verify Apple disk sharing and access to existing backups; uninstall does not validate those services.
 
 #### What if I want to keep the project folder but remove it from my Mac?
 
@@ -347,4 +345,4 @@ The deployed runtime can keep working without the local TimeCapsuleSMB folder, b
 
 #### What about the `flash` command?
 
-The `flash` command will flash a NetBSD 4 device to automatically run `/mnt/Flash/rc.local` after reboot without running `activate`. This is the only command that's dangerous and can permanently brick your device, so use at your own caution. That being said, I added a lot of safety checks to `flash`, and I do not have any reports of it permanently bricking a device.
+The `flash` command modifies NetBSD 4 firmware to run `/mnt/Flash/rc.local` automatically after reboot. A failed or interrupted write can leave the device unbootable. It requires a saved firmware backup and has validation checks, but those checks cannot guarantee recovery. Ordinary deployment, privileged runtime services, and disk repair also carry risks to availability and data. Fifth-generation Time Capsules do not need this firmware modification.

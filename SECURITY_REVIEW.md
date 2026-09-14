@@ -24,6 +24,11 @@ upstream and does not contain this hardening.
 | R1: obsolete rsync requirements prevented hardened startup | Both host and boot validators check the actual four-program payload and private directory. Tests run both real validators against the deployment layout, including missing files and the supported legacy smbd location. |
 | R2: uninstall removed persistent file attributes | Remove only managed programs and recovery snapshots. Keep `private/xattr.tdb`, the rest of the private directory, and other data in place. Test actual uninstall commands followed by reinstall with metadata and backup sentinels. |
 | R3: interrupted updates overwrote active files without recovery | Stage all eleven files, verify SHA-256 by readback, retain previous programs, install an inert boot entry point during replacement, and install the complete boot entry point last. Restore previous programs on replacement/activation failure while leaving unsafe old boot code disabled. A RAM lock and durable transaction identity protect against concurrent or delayed clients. |
+| R4: other maintenance bypassed the deployment lock | Share the device RAM lock across deployment, uninstall, activation, firmware writes, disk repair, reboot, mount requests, and disk write probes. Acquire before mutations, verify the firmware target again under the lock, preserve exclusion after uncertain disconnects, and retain reboot locks until RAM resets. Tests run real shell lock operations against temporary filesystems and hold a simulated fsck active while competing operations attempt to run. |
+| R5: selected repair roots bypassed backup/metadata exclusions | Check the resolved root and protected ancestors before traversal, including explicit files and symlink targets. Backup scanning still requires the explicit flag; `.samba4` is always excluded. |
+| R6: automatic repair could select a different SMB server | Require a matching configured server; an unmatched mounted share requires an explicit path even if it is the only available share. |
+| R7: disabling NBNS prevented Samba from claiming TCP 445 | Stop Apple's `wcifsfs` before every Samba start/recovery independently of NBNS. Tests require successful listener cleanup before starting Samba and fail closed if cleanup fails. |
+| R8: documentation promised factory restoration and recommended deleting metadata | Remove those claims and the full-folder deletion instructions. Explain retained metadata, incomplete reversal of prior settings/file changes, hardware validation limits, and the unresolved upstream settings-reset reports. |
 
 Additional fixes keep updates/downloads on this fork, invalidate caches from other
 update sources, and correct macOS resource-bundle validation. No hardened app release
@@ -76,6 +81,14 @@ activation and post-upload verification failures, concurrent clients, and a rebo
 followed by a delayed old client. A reboot clears a stranded RAM lock; a malformed
 journal stops recovery for inspection. These tests do not simulate HFS media
 damage, real power-loss durability, or Apple's boot timing.
+
+The maintenance lock coordinates clients running this branch, not Apple firmware,
+AirPort Utility, manual commands, or older clients whose maintenance paths lacked
+locking. Do not mix these clients during maintenance. Only clear a stranded RAM
+lock by rebooting after confirming no remote repair or firmware write remains active.
+Upstream [issue 177](https://github.com/jamesyc/TimeCapsuleSMB/issues/177) reports
+installation-time settings resets. The cause remains unresolved; this fork cannot
+guarantee uninterrupted Wi-Fi, routing, disk sharing, or existing backup continuity.
 
 Local source tests and an isolated NetBSD build VM cannot establish correct
 behavior on Apple's modified kernels or HFS filesystem. Before using important

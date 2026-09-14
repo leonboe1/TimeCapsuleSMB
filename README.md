@@ -268,9 +268,15 @@ If you want the results in JSON instead of human-readable text, use:
 
 Deploy uploads the complete replacement into `.samba4/.deploy-transaction`, verifies every file by reading it back and comparing SHA-256, and saves the previous program and configuration files on the disk. It disables managed boot before replacing active files and installs `rc.local` last. Disk staging needs additional free space for the new files, previous files, and a temporary replacement file; Flash needs space for one temporary file at a time.
 
-An upload failure leaves active programs untouched. A replacement or runtime-verification failure restores previous program files when SSH and the disk remain available, but leaves managed startup disabled: automatically running an old installation could re-enable removed unsafe code. Reconnect and rerun the same `tcapsule deploy` command to recover an interrupted replacement and install a complete version. Do not manually execute saved boot scripts. If a forcibly terminated client leaves its RAM lock behind, first ensure that client has stopped, then reboot the device and rerun deploy. The recovery guard prevents managed startup during an incomplete replacement. An invalid journal or lock requires inspection; the tool refuses to guess or overwrite unrelated files.
+An upload failure leaves active programs untouched. A replacement or runtime-verification failure restores previous program files when SSH and the disk remain available, but leaves managed startup disabled: automatically running an old installation could re-enable removed unsafe code. Reconnect and rerun the same `tcapsule deploy` command to recover an interrupted replacement and install a complete version. Do not manually execute saved boot scripts. If a forcibly terminated client leaves its RAM lock behind, first confirm that all clients and remote maintenance commands have stopped, then reboot the device and rerun deploy. Never interrupt an active disk repair or firmware write to clear a lock. The recovery guard prevents managed startup during an incomplete replacement. An invalid journal or lock requires inspection; the tool refuses to guess or overwrite unrelated files.
 
 After successful runtime verification, the previous program snapshot remains under `.samba4/.deploy-previous`. If you skip verification or decline a reboot, it remains in `.deploy-transaction` until the next deploy. These snapshots do not include your backups or `.samba4/private/xattr.tdb`, which remains in its original location. They cannot repair filesystem corruption or replace an independent backup. Before using this experimental runtime on irreplaceable backups, make a separate copy and validate backup and restore on disposable data.
+
+### Device maintenance lock
+
+Deployment, uninstall, activation, firmware writes, disk repair, and reboot requests share a device-level RAM lock. Mount requests and disk write probes also respect it, including requests from another app instance or device profile. If it is held, the competing operation stops before making changes. Do not run an older client alongside this branch; older uninstall/repair clients do not participate in this lock.
+
+A disconnect or interrupted operation can leave the lock held because a remote command may still be running. Confirm that all other clients and remote operations have stopped before rebooting to clear it. Never reboot merely to bypass an active firmware write or disk repair. The lock coordinates this fork’s clients; it cannot prevent Apple firmware, AirPort Utility, or manually issued commands from changing device state.
 
 ## Step 6: Remove It Later If Needed
 
@@ -280,7 +286,7 @@ Run:
 .venv/bin/tcapsule uninstall
 ```
 
-This removes the managed TimeCapsuleSMB payload from the internal disk and removes the loader files from `/mnt/Flash`. Apple wipes the filesystem on the device after every reboot, except for `/mnt/Flash`, so that's where we install the loader scripts. If you delete the 7 payload files in `/mnt/Flash`, delete the `.samba4` folder on the hard drive, and then reboot, you can restore your machine to factory clean condition.
+This removes managed programs and the loader files from `/mnt/Flash`. It preserves your backups and Samba’s persistent file metadata. Use the uninstall command; deleting the whole `.samba4` folder would also delete metadata needed by existing files.
 
 By default `uninstall` asks before rebooting the Time Capsule. If you want to skip the reboot confirmation prompt, use:
 
@@ -295,7 +301,7 @@ If you want to preview the uninstall plan without changing the device, use:
 .venv/bin/tcapsule uninstall --dry-run --json
 ```
 
-Uninstall removes managed programs and boot files. It retains `.samba4/private`, including `xattr.tdb`, in its original location: this database stores persistent file attributes for your shares and is reused on reinstall. Other data, logs and caches in `.samba4` are also retained. Do not delete that folder as a cleanup step. Uninstall does **not** check whether Apple SMB or AFP is enabled afterward. Those services depend on the device's own settings.
+Uninstall removes managed programs and boot files. It retains `.samba4/private`, including `xattr.tdb`, in its original location: this database stores persistent file attributes for your shares and is reused on reinstall. Other data, logs and caches in `.samba4` are also retained. Do not delete that folder as a cleanup step. Uninstall does **not** check whether Apple SMB or AFP is enabled afterward. Those services depend on the device's own settings. Uninstall is not a factory reset or an exact undo: SSH settings, a separately installed firmware boot hook, changes made to files while using SMB, and the Mac’s Time Machine destination are not automatically restored. Check disk sharing and backup access after reboot.
 
 If you want to remove the files without rebooting immediately, use:
 
