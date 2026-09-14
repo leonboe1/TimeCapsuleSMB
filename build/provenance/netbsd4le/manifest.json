@@ -50,9 +50,9 @@
       "uncompressed_sha256": "2dc1359c17e3303d4da53d7191ffd08c0ebb53318043208c8e1af8cbc70f13cd"
     },
     "sdk-distribution.log.gz": {
-      "sha256": "e68bb422f300ed1411d35d8e09e4d977433923e87df0e7b12f321c710c2f9fdc",
-      "uncompressed_bytes": 48770053,
-      "uncompressed_sha256": "62df557d4a05a14db799d91d7cea7268a0d86145c8ae66d8035240051231bf52"
+      "sha256": "6b33bb034ea64915a653cebcfa0c51efbb3b0c7120a9eeb9cd0aa9977d1c412a",
+      "uncompressed_bytes": 57931365,
+      "uncompressed_sha256": "76b74e00e219ec9a6eb820f320b0878af9f8dc6c0a88b1fd9ef86471cd108fe5"
     },
     "sdk-tools.log.gz": {
       "sha256": "d4e5671d268dd4b0823f4e895377d2a882fd3fd845434bbd7b293cc041a7c8d7",
@@ -263,7 +263,7 @@
     "patch_sha256": "2dc1359c17e3303d4da53d7191ffd08c0ebb53318043208c8e1af8cbc70f13cd"
   },
   "schema": 1,
-  "sdk_distribution_complete": false,
+  "sdk_distribution_complete": true,
   "sdk_source": {
     "commit": "07a9c83a12c56f1bb6fe0e2ae08c9d2b46dd307c",
     "patch_sha256": "19c3c72b123d473e3c9e08705f3d647c009903effe05e96385ca9cdd0d5b200f"
