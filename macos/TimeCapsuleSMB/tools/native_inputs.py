@@ -239,7 +239,9 @@ def bundle(app: Path, architectures: tuple[str, ...], cache: Path, api) -> None:
             kegs[record["name"]] = keg
         sshpass, build = build_sshpass(manifest["sshpass"], cache, root / "sshpass", architectures)
         files = copy_closure({"smbclient": kegs["samba"] / "bin/smbclient", "sshpass": sshpass[arch]}, app, kegs, root, api)
-        api.ad_hoc_codesign_macho_bundle(app)
+        # Only this layer changed. Python was already finalized and signed;
+        # signing its nested executables again can reinterpret them as bundles.
+        api.ad_hoc_codesign_macho_roots([app / "Contents/Resources/Tools/bin", app / "Contents/Frameworks"])
         api.assert_tool_architectures(app, architectures)
         api.assert_runtime_macho_architectures(app, architectures)
         api.assert_no_external_macho_dependencies(app)
