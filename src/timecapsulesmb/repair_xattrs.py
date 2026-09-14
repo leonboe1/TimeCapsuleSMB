@@ -252,6 +252,14 @@ def iter_scan_paths(
     except OSError as exc:
         raise RuntimeError(f"Cannot access path: {root}: {exc}") from exc
 
+    # A selected subdirectory (or a symlink to it) must not hide the protected
+    # bundle/metadata directory above it by becoming the traversal root.
+    if should_skip_path(
+        root, Path(root.anchor), include_hidden=True, include_time_machine=include_time_machine,
+    ) or (not include_hidden and root.name.startswith(".")):
+        summary.skipped += 1
+        return
+
     if root_is_file:
         if not should_skip_path(
             root,
