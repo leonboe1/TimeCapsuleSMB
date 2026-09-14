@@ -50,10 +50,7 @@ def _compile(target, flags, extra_sources, exclude):
     objects = []
     for index, source in enumerate([*selected, *extra_sources]):
         obj = output.parent / f'{index}.o'
-        # Unmodified TweetNaCl uses signed shifts in field normalization. Keep
-        # ASan and the other UB checks, but don't rewrite cryptography in a split.
-        vendor_flags = ['-fno-sanitize=shift'] if Path(source).name == 'tweetnacl.c' else []
-        result = subprocess.run([*common, *vendor_flags, '-c', str(source), '-o', str(obj)],
+        result = subprocess.run([*common, '-c', str(source), '-o', str(obj)],
                                 capture_output=True, text=True, timeout=60)
         if result.returncode:
             raise AssertionError(result.stderr)

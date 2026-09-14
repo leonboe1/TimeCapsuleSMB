@@ -1635,7 +1635,7 @@ MaSt = (
             Path("/tmp/mdns"),
             Path("/tmp/nbns"),
             rsync_path=Path("/tmp/rsync"),
-         service_path=Path("bin/service"), telemetry_path=Path("bin/telemetry"))
+         service_path=Path("bin/service"))
         source_ids = {upload.source_id for upload in plan.uploads}
 
         self.assertIn(GENERATED_FLASH_CONFIG_SOURCE, source_ids)
@@ -2817,7 +2817,6 @@ MaSt = (
                         printf '#!/bin/sh\\nexit 0\\n' >"$TC_SMBD_BIN"
                         chmod 755 "$TC_SMBD_BIN"
                         cp "$TC_SMBD_BIN" "$TC_SERVICE_BIN"
-                        cp "$TC_SMBD_BIN" "$TC_TELEMETRY_BIN"
                         : >"$RAM_PRIVATE/smbpasswd"
                         : >"$RAM_PRIVATE/username.map"
                         return 0
@@ -4693,8 +4692,6 @@ MaSt = (
             service_source = flash.parent / "Memory/samba4/sbin/service"
             (payload / "service").write_text(service_source.read_text() if service_source.exists() else "#!/bin/sh\nexit 0\n")
             (payload / "service").chmod(0o755)
-            (payload / "telemetry").write_text("#!/bin/sh\necho telemetry-ok\n")
-            (payload / "telemetry").chmod(0o755)
             events = tmp_path / "stage-events"
             script = tmp_path / "stage-runtime-temp-rename.sh"
             script.write_text(
@@ -4720,7 +4717,6 @@ MaSt = (
                     }}
                     tc_stage_runtime {payload} {payload}/smbd ""
                     /bin/rm -rf {payload}
-                    "$TC_TELEMETRY_BIN" --version
                     printf 'hash-after-disk-removal='
                     printf 'password\\n' | "$TC_SERVICE_BIN" --print-nt-hash-from-stdin
                     printf 'dest='
@@ -4739,7 +4735,6 @@ MaSt = (
 
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertIn("dest=payload smbd\n", proc.stdout)
-        self.assertIn("telemetry-ok\n", proc.stdout)
         self.assertIn("hash-after-disk-removal=0123456789ABCDEF0123456789ABCDEF\n", proc.stdout)
         self.assertRegex(
             proc.stdout,
@@ -4769,8 +4764,6 @@ MaSt = (
             service_source = flash.parent / "Memory/samba4/sbin/service"
             (payload / "service").write_text(service_source.read_text() if service_source.exists() else "#!/bin/sh\nexit 0\n")
             (payload / "service").chmod(0o755)
-            (payload / "telemetry").write_text("#!/bin/sh\necho telemetry-ok\n")
-            (payload / "telemetry").chmod(0o755)
             script = tmp_path / "stage-runtime-copy-failure.sh"
             script.write_text(
                 textwrap.dedent(
@@ -4823,8 +4816,6 @@ MaSt = (
             service_source = flash.parent / "Memory/samba4/sbin/service"
             (payload / "service").write_text(service_source.read_text() if service_source.exists() else "#!/bin/sh\nexit 0\n")
             (payload / "service").chmod(0o755)
-            (payload / "telemetry").write_text("#!/bin/sh\necho telemetry-ok\n")
-            (payload / "telemetry").chmod(0o755)
             (payload / "service").write_text(
                 "#!/bin/sh\n"
                 "if [ \"$1\" = '--print-nt-hash-from-stdin' ]; then cat >/dev/null; exit 8; fi\n"
@@ -4880,8 +4871,6 @@ MaSt = (
             service_source = flash.parent / "Memory/samba4/sbin/service"
             (payload / "service").write_text(service_source.read_text() if service_source.exists() else "#!/bin/sh\nexit 0\n")
             (payload / "service").chmod(0o755)
-            (payload / "telemetry").write_text("#!/bin/sh\necho telemetry-ok\n")
-            (payload / "telemetry").chmod(0o755)
             script = tmp_path / "stage-runtime-acp-failure.sh"
             script.write_text(
                 textwrap.dedent(
@@ -4923,8 +4912,6 @@ MaSt = (
             service_source = flash.parent / "Memory/samba4/sbin/service"
             (payload / "service").write_text(service_source.read_text() if service_source.exists() else "#!/bin/sh\nexit 0\n")
             (payload / "service").chmod(0o755)
-            (payload / "telemetry").write_text("#!/bin/sh\necho telemetry-ok\n")
-            (payload / "telemetry").chmod(0o755)
             script = tmp_path / "stage-runtime-invalid-hash.sh"
             script.write_text(
                 textwrap.dedent(
@@ -4968,8 +4955,6 @@ MaSt = (
             service_source = flash.parent / "Memory/samba4/sbin/service"
             (payload / "service").write_text(service_source.read_text() if service_source.exists() else "#!/bin/sh\nexit 0\n")
             (payload / "service").chmod(0o755)
-            (payload / "telemetry").write_text("#!/bin/sh\necho telemetry-ok\n")
-            (payload / "telemetry").chmod(0o755)
             script = tmp_path / "stage-runtime-private-chmod-failure.sh"
             script.write_text(
                 textwrap.dedent(
@@ -5022,8 +5007,6 @@ MaSt = (
             service_source = flash.parent / "Memory/samba4/sbin/service"
             (payload / "service").write_text(service_source.read_text() if service_source.exists() else "#!/bin/sh\nexit 0\n")
             (payload / "service").chmod(0o755)
-            (payload / "telemetry").write_text("#!/bin/sh\necho telemetry-ok\n")
-            (payload / "telemetry").chmod(0o755)
             script = tmp_path / "stage-runtime-smbpasswd-rename-failure.sh"
             script.write_text(
                 textwrap.dedent(
@@ -5233,8 +5216,6 @@ MaSt = (
             service_source = flash.parent / "Memory/samba4/sbin/service"
             (payload / "service").write_text(service_source.read_text() if service_source.exists() else "#!/bin/sh\nexit 0\n")
             (payload / "service").chmod(0o755)
-            (payload / "telemetry").write_text("#!/bin/sh\necho telemetry-ok\n")
-            (payload / "telemetry").chmod(0o755)
             (payload / "rsync").write_text("#!/bin/sh\nexit 0\n")
             (payload / "rsync").chmod(0o755)
             (payload / "rsyncd.conf").write_text("[shareroot]\n")

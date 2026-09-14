@@ -28,7 +28,6 @@ BINARY_SMBD_SOURCE = "binary:smbd"
 BINARY_MDNS_SOURCE = "binary:mdns"
 BINARY_NBNS_SOURCE = "binary:nbns"
 BINARY_SERVICE_SOURCE = "binary:service"
-BINARY_TELEMETRY_SOURCE = "binary:telemetry"
 BINARY_RSYNC_SOURCE = "binary:rsync"
 PACKAGED_RC_LOCAL_SOURCE = "packaged:rc.local"
 PACKAGED_COMMON_SH_SOURCE = "packaged:common.sh"
@@ -74,7 +73,6 @@ class DeploymentPlan:
     nbns_path: Path
     rsync_path: Path
     service_path: Path
-    telemetry_path: Path
     rsync_enabled: bool
     flash_targets: dict[str, str]
     payload_targets: dict[str, str]
@@ -218,7 +216,6 @@ def build_deployment_plan(
     *,
     rsync_path: Path,
     service_path: Path,
-    telemetry_path: Path,
     rsync_enabled: bool = False,
     startup_mode: DeploymentStartupMode = DEPLOY_STARTUP_REBOOT_THEN_VERIFY,
     apple_mount_wait_seconds: int = DEFAULT_APPLE_MOUNT_WAIT_SECONDS,
@@ -244,7 +241,6 @@ def build_deployment_plan(
         "mdns": f"{payload_dir}/mdns-advertiser",
         "nbns": f"{payload_dir}/nbns-advertiser",
         "service": f"{payload_dir}/service",
-        "telemetry": f"{payload_dir}/telemetry",
         "rsync": f"{payload_dir}/rsync",
         "rsyncd.conf": f"{payload_dir}/rsyncd.conf",
     }
@@ -279,7 +275,6 @@ def build_deployment_plan(
         RemotePermission(flash_targets["dfree.sh"], "755"),
         RemotePermission(flash_targets["mdns"], "755"),
         RemotePermission(payload_targets["service"], "755"),
-        RemotePermission(payload_targets["telemetry"], "755"),
         RemotePermission(flash_targets["tcapsulesmb.conf"], "600"),
         RemotePermission(cache_dir, "755"),
         RemotePermission(private_dir, "700"),
@@ -295,7 +290,6 @@ def build_deployment_plan(
         nbns_path=nbns_path,
         rsync_path=rsync_path,
         service_path=service_path,
-        telemetry_path=telemetry_path,
         rsync_enabled=rsync_enabled,
         flash_targets=flash_targets,
         payload_targets=payload_targets,
@@ -311,7 +305,6 @@ def build_deployment_plan(
             FileTransfer(BINARY_RSYNC_SOURCE, payload_targets["rsync"], "scp", PAYLOAD_BINARY_UPLOAD_TIMEOUT_SECONDS, "checked-in rsync"),
             FileTransfer(GENERATED_RSYNC_CONFIG_SOURCE, payload_targets["rsyncd.conf"], "generated", FLASH_TEXT_UPLOAD_TIMEOUT_SECONDS, "generated rsync daemon config"),
             FileTransfer(BINARY_SERVICE_SOURCE, payload_targets["service"], "scp", PAYLOAD_BINARY_UPLOAD_TIMEOUT_SECONDS, "service helper for RAM staging"),
-            FileTransfer(BINARY_TELEMETRY_SOURCE, payload_targets["telemetry"], "scp", PAYLOAD_BINARY_UPLOAD_TIMEOUT_SECONDS, "telemetry helper for RAM staging"),
             FileTransfer(PACKAGED_RC_LOCAL_SOURCE, flash_targets["rc.local"], "flash_atomic", FLASH_TEXT_UPLOAD_TIMEOUT_SECONDS, "packaged rc.local"),
             FileTransfer(PACKAGED_COMMON_SH_SOURCE, flash_targets["common.sh"], "flash_atomic", FLASH_TEXT_UPLOAD_TIMEOUT_SECONDS, "packaged common.sh"),
             FileTransfer(PACKAGED_BOOT_SOURCE, flash_targets["boot.sh"], "flash_atomic", FLASH_TEXT_UPLOAD_TIMEOUT_SECONDS, "packaged boot.sh"),
@@ -333,6 +326,9 @@ def build_deployment_plan(
             StopProcessAction("nbns"),
             StopProcessAction("rsync"),
             StopTelemetryAction(),
+            ensure_payload_volume,
+            RemovePathAction(f"{payload_dir}/telemetry"),
+            RemovePathAction("/mnt/Memory/samba4/sbin/telemetry"),
             RemovePathAction("/mnt/Flash/mdns"),
             RemovePathAction("/mnt/Flash/start-samba.sh"),
             RemovePathAction("/mnt/Flash/watchdog.sh"),

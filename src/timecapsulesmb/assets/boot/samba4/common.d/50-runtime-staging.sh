@@ -280,7 +280,6 @@ tc_stage_runtime() {
     # before authentication/bind probes, and never execute them from the disk
     # that Apple's diskd may unmount after startup.
     tc_stage_runtime_executable "$payload_dir/service" "$TC_SERVICE_BIN" || return 1
-    tc_stage_runtime_executable "$payload_dir/telemetry" "$TC_TELEMETRY_BIN" || return 1
     tc_stage_runtime_executable "$smbd_src" "$TC_SMBD_BIN" || return 1
 
     tc_generate_runtime_smbpasswd || return 1

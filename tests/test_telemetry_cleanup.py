@@ -49,19 +49,17 @@ def legacy_tree(memory):
     return legacy
 
 
-def test_quiescent_legacy_tree_removed_and_fixed_files_preserved(cleanup_rig, tmp_path):
+def test_quiescent_legacy_tree_removed_without_following_links(cleanup_rig, tmp_path):
     memory, calls, ps, _, _, run = cleanup_rig
     legacy = legacy_tree(memory)
     outside = tmp_path / 'outside'; outside.write_text('preserve')
     (legacy / 'outside-link').symlink_to(outside)
-    (memory / 'debug').write_text('active fixed-file work')
     ps.write_text('Z debug\nS sh\n')
     result = run()
     assert result.returncode == 0, result.stderr
     assert not legacy.exists()
     assert outside.read_text() == 'preserve'
-    assert (memory / 'debug').read_text() == 'active fixed-file work'
-    assert calls.read_text().splitlines() == ['^telemetry$']
+    assert calls.read_text().splitlines() == ['^telemetry$', '^heartbeat$']
 
 
 @pytest.mark.parametrize('process', ['telemetry', 'debug', 'heartbeat'])
@@ -99,7 +97,7 @@ def test_uninstall_propagates_cleanup_failure_or_busy(cleanup_rig, status):
     memory, _, _, _, _, run = cleanup_rig
     (memory / 'debug').write_text('preserve')
     result = run(cleanup=True, TC_TEST_CLEANUP_RC=status)
-    assert result.returncode == int(status)
+    assert result.returncode == 1
     assert (memory / 'debug').read_text() == 'preserve'
 
 
@@ -109,7 +107,7 @@ def test_old_helper_cannot_delete_fixed_files_without_ownership(cleanup_rig):
     (memory / 'debug.sig').write_text('leftover')
     result = run(cleanup=True, TC_TEST_VERSION='2')
     assert result.returncode == 1
-    assert 'cleanup helper is unavailable' in result.stderr
+    assert 'restart the device' in result.stderr
     assert (memory / 'debug.sig').exists()
 
 
@@ -129,3 +127,18 @@ def test_uninstall_stops_before_deleting_files_when_cleanup_is_busy():
     assert remote_action_to_jsonable(cleanup) == {'kind': 'stop_telemetry', 'cleanup': True}
     assert '/mnt/Memory/debug' in plan.verify_absent_targets
     assert '/mnt/Memory/debug.sig' in plan.verify_absent_targets
+
+
+def test_cleanup_never_executes_the_old_helper(cleanup_rig):
+    memory, _, _, _, helper, run = cleanup_rig
+    marker = memory / 'executed'
+    helper.write_text('#!/bin/sh\ntouch ' + shlex.quote(str(marker)) + '\n')
+    assert run(cleanup=True).returncode == 0
+    assert not marker.exists()
+
+
+@pytest.mark.parametrize('process', ['telemetry', 'debug', 'heartbeat'])
+def test_active_work_blocks_migration_without_a_legacy_directory(cleanup_rig, process):
+    _, _, ps, _, _, run = cleanup_rig
+    ps.write_text('S ' + process + '\n')
+    assert run().returncode == 75

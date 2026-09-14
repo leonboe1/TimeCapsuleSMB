@@ -25,7 +25,6 @@ from timecapsulesmb.deploy.planner import (
     BINARY_MDNS_SOURCE,
     BINARY_NBNS_SOURCE,
     BINARY_SERVICE_SOURCE,
-    BINARY_TELEMETRY_SOURCE,
     BINARY_RSYNC_SOURCE,
     BINARY_SMBD_SOURCE,
     DeploymentPlan,
@@ -106,7 +105,6 @@ DEPLOY_REBOOT_NO_DOWN_MESSAGE = (
 )
 DEPLOY_UPLOAD_BOOT_SOURCES = frozenset({
     BINARY_SERVICE_SOURCE,
-    BINARY_TELEMETRY_SOURCE,
     PACKAGED_RC_LOCAL_SOURCE,
     PACKAGED_COMMON_SH_SOURCE,
     PACKAGED_DFREE_SH_SOURCE,
@@ -139,7 +137,6 @@ class DeployArtifactPaths:
     nbns_advertiser: Path
     rsync: Path
     service: Path
-    telemetry: Path
 
 
 @dataclass(frozen=True)
@@ -473,7 +470,6 @@ def resolve_deploy_artifact_paths(
         nbns_advertiser=resolved_artifacts["nbns"].absolute_path,
         rsync=resolved_artifacts["rsync"].absolute_path,
         service=resolved_artifacts["service"].absolute_path,
-        telemetry=resolved_artifacts["telemetry"].absolute_path,
     )
 
 
@@ -515,7 +511,6 @@ def prepare_deploy_preflight(
         artifacts.nbns_advertiser,
         rsync_path=artifacts.rsync,
         service_path=artifacts.service,
-        telemetry_path=artifacts.telemetry,
         rsync_enabled=options.rsync_enabled,
         startup_mode=payload_context.startup_mode,
         apple_mount_wait_seconds=options.mount_wait_seconds,
@@ -668,7 +663,6 @@ def prepare_deployment_plan(
         artifacts.nbns_advertiser,
         rsync_path=artifacts.rsync,
         service_path=artifacts.service,
-        telemetry_path=artifacts.telemetry,
         rsync_enabled=rsync_enabled,
         startup_mode=payload_context.startup_mode,
         apple_mount_wait_seconds=mount_wait_seconds,
@@ -710,7 +704,6 @@ def _deployment_upload_sources(
         BINARY_MDNS_SOURCE: plan.mdns_path,
         BINARY_NBNS_SOURCE: plan.nbns_path,
         BINARY_SERVICE_SOURCE: plan.service_path,
-        BINARY_TELEMETRY_SOURCE: plan.telemetry_path,
         BINARY_RSYNC_SOURCE: plan.rsync_path,
         GENERATED_FLASH_CONFIG_SOURCE: generated_flash_config,
         GENERATED_RSYNC_CONFIG_SOURCE: generated_rsync_config,

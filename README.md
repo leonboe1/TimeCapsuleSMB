@@ -284,7 +284,7 @@ Unfortunately, it was not an option to "copy one binary somewhere and call it a 
 1. Keep the full `smbd` payload on the big internal hard disk.
 2. Keep only a very small `rc.local` boot script on flash.
 3. At boot, wait for the internal disk to appear and mount.
-4. Copy the runtime binaries, including `service` and `telemetry`, into `/mnt/Memory`.
+4. Copy the runtime binaries, including `service`, into `/mnt/Memory`.
 5. Start Samba from the `/mnt/Memory`, not from the big disk Apple may later decide to unmount.
 6. Advertise `_smb._tcp` with a separate tiny mDNS helper.
 
@@ -375,7 +375,7 @@ The commands have logging and telemetry enabled by default. Errors and exception
 
 The checked-in binaries are already built. If you want to rebuild them yourself, the maintainer build flow lives under [build/](build) and depends on a NetBSD VM.
 
-The native helpers are `mdns-advertiser`, `nbns-advertiser`, `service` (hashing and network probes), and `telemetry` (heartbeat reporting and signed debug execution). Each links into one static executable; see [build/native/README.md](build/native/README.md).
+The native helpers are `mdns-advertiser`, `nbns-advertiser`, `service` (hashing and network probes). Each links into one static executable; see [build/native/README.md](build/native/README.md).
 
 The main build outputs are:
 
@@ -391,6 +391,3 @@ The main build outputs are:
 - [bin/service/service](bin/service/service)
 - [bin/service-netbsd4le/service](bin/service-netbsd4le/service)
 - [bin/service-netbsd4be/service](bin/service-netbsd4be/service)
-- [bin/telemetry/telemetry](bin/telemetry/telemetry)
-- [bin/telemetry-netbsd4le/telemetry](bin/telemetry-netbsd4le/telemetry)
-- [bin/telemetry-netbsd4be/telemetry](bin/telemetry-netbsd4be/telemetry)
