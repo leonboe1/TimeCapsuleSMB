@@ -51,10 +51,7 @@ TC_LOCAL int link_contexts_need_nbns_ipv4_socket(const struct link_context_set *
 
 TC_LOCAL void filter_nbns_link_contexts(struct link_context_set *out,
                                       const struct link_context_set *all_links) {
-    filter_smb_bind_link_contexts(out, all_links, 1, 0);
-    if (out->count == 0) {
-        filter_smb_bind_link_contexts(out, all_links, 1, 1);
-    }
+    filter_smb_bind_link_contexts(out, all_links, 1);
     keep_only_nbns_ipv4_link_contexts(out);
 }
 

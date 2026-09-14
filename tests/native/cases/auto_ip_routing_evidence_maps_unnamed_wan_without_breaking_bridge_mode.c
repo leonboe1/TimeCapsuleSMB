@@ -64,8 +64,8 @@ int main(void) {
     if (links.links[0].is_wan || !links.links[1].is_wan) {
         return 2;
     }
-    filter_smb_bind_link_contexts(&lan_links, &links, 1, 1);
-    if (lan_links.count != 1 || lan_links.links[0].ipv4[0].addr != inet_addr("10.0.1.1")) {
+    filter_smb_bind_link_contexts(&lan_links, &links, 1);
+    if (lan_links.count != 0) {
         return 3;
     }
     old_links = links;
@@ -117,8 +117,8 @@ int main(void) {
     append_link_ipv4(&links, "ip4-0a000101", inet_addr("10.0.1.1"), inet_addr("255.255.255.0"), IFF_UP | IFF_RUNNING);
     append_link_ipv4(&links, "ip4-c0a801da", inet_addr("192.168.1.218"), inet_addr("255.255.255.0"), IFF_UP | IFF_RUNNING);
     mark_wan_link_contexts_from_evidence(&links, &evidence, &owners);
-    filter_smb_bind_link_contexts(&lan_links, &links, 1, 1);
-    if (lan_links.count != 2) {
+    filter_smb_bind_link_contexts(&lan_links, &links, 1);
+    if (lan_links.count != 0) {
         return 5;
     }
     return 0;

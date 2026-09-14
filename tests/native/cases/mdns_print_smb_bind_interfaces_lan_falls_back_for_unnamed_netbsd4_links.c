@@ -41,11 +41,11 @@ int main(void) {
     if (print_smb_bind_interfaces_with_provider(stdout, fake_collect_links, &plan) != EXIT_OK) {
         return 1;
     }
-    if (print_smb_bind_interfaces_lan_with_provider(stdout, fake_collect_links, &plan) != EXIT_OK) {
+    if (print_smb_bind_interfaces_lan_with_provider(stdout, fake_collect_links, &plan) != EXIT_AUTO_IP_UNAVAILABLE) {
         return 2;
     }
     plan.mode = 2;
-    if (print_smb_bind_interfaces_lan_with_provider(stdout, fake_collect_links, &plan) != EXIT_OK) {
+    if (print_smb_bind_interfaces_lan_with_provider(stdout, fake_collect_links, &plan) != EXIT_AUTO_IP_UNAVAILABLE) {
         return 3;
     }
     plan.mode = 3;

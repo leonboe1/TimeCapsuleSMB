@@ -206,10 +206,7 @@ enum mdns_service_scope mdns_service_scope_for_link(const struct link_context_se
                                                            const struct link_context *link) {
     struct link_context_set lan_links;
 
-    filter_smb_bind_link_contexts(&lan_links, links, 1, 0);
-    if (lan_links.count == 0) {
-        filter_smb_bind_link_contexts(&lan_links, links, 1, 1);
-    }
+    filter_smb_bind_link_contexts(&lan_links, links, 1);
     return link_context_set_contains_topology(&lan_links, link)
                ? MDNS_SERVICE_SCOPE_LAN
                : MDNS_SERVICE_SCOPE_WAN;

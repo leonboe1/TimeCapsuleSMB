@@ -50,7 +50,9 @@ Upgrading stops and removes the old daemon. Requests to enable it fail explicitl
 use authenticated SMB for file access.
 
 New CLI configurations and app profiles bind SMB to LAN interfaces by default.
-Existing explicit choices are preserved. Keep `TC_SMB_BIND_LAN_ONLY=true` unless
+If interface-name recovery cannot identify a LAN interface, startup waits; a private
+address alone is no longer accepted as LAN evidence. Existing explicit choices
+are preserved. Keep `TC_SMB_BIND_LAN_ONLY=true` unless
 you have deliberately configured a separate trusted network and its firewall.
 
 SSH connections require a pinned device key in `~/.ssh/known_hosts`. Unknown and

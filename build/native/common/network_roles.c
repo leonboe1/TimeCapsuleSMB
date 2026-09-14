@@ -457,31 +457,13 @@ int link_context_set_has_synthetic_names(const struct link_context_set *set);
 void mark_wan_link_contexts(struct link_context_set *links) {
     struct network_role_evidence evidence;
     struct ifconfig_address_owner_map owners;
-    static int logged_ambiguous_private_links = 0;
-    size_t private_synthetic_count = 0;
-    size_t wan_count = 0;
-    size_t i;
-
     memset(&owners, 0, sizeof(owners));
     if (link_context_set_has_synthetic_names(links)) {
         (void)collect_ifconfig_address_owners(&owners);
     }
     collect_network_role_evidence(&evidence);
     mark_wan_link_contexts_from_evidence(links, &evidence, &owners);
-    for (i = 0; i < links->count; i++) {
-        if (links->links[i].is_wan) {
-            wan_count++;
-        }
-        if (link_context_is_unnamed_private_lan_fallback(&links->links[i])) {
-            private_synthetic_count++;
-        }
-    }
-    if (!logged_ambiguous_private_links && wan_count == 0 && private_synthetic_count > 1) {
-        fprintf(stderr,
-                "auto-ip: routing evidence could not distinguish %lu unnamed private links; preserving fail-open LAN fallback\n",
-                (unsigned long)private_synthetic_count);
-        logged_ambiguous_private_links = 1;
-    }
+
 }
 
 int link_context_set_has_synthetic_names(const struct link_context_set *set) {

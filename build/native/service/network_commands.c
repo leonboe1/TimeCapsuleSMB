@@ -92,16 +92,7 @@ int print_smb_bind_interfaces_with_policy(FILE *stream,
         fprintf(stderr, "auto-ip: Samba bind interface list exceeded static capacity\n");
         return EXIT_AUTO_IP_PROBE_FAILED;
     }
-    filter_smb_bind_link_contexts(&bind_links, &all_links, lan_only, 0);
-    if (lan_only && bind_links.count == 0) {
-        /*
-         * Some NetBSD 4 Time Capsules expose getifaddrs address rows without
-         * interface names, so bridge0 appears as synthetic ip4-* links. In
-         * that case keep LAN-only mode working by falling back to private LAN
-         * Samba bind candidates instead of deferring startup forever.
-         */
-        filter_smb_bind_link_contexts(&bind_links, &all_links, lan_only, 1);
-    }
+    filter_smb_bind_link_contexts(&bind_links, &all_links, lan_only);
     if (bind_links.count == 0) {
         return EXIT_AUTO_IP_UNAVAILABLE;
     }

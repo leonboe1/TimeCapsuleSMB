@@ -1136,15 +1136,13 @@ echo ok
             "10.0.1.1/24 fdbb:1111:2222:3333::40/64\n",
         )
 
-    def test_mdns_print_smb_bind_interfaces_lan_falls_back_for_unnamed_netbsd4_links(self) -> None:
+    def test_mdns_print_smb_bind_interfaces_lan_rejects_unclassified_netbsd4_links(self) -> None:
         source = native_case_source("mdns_print_smb_bind_interfaces_lan_falls_back_for_unnamed_netbsd4_links")
         run = self._compile_and_run_c_helper(source, "mdns_print_smb_bind_lan_unnamed_fallback")
         self.assertEqual(run.returncode, 0, run.stderr)
         self.assertEqual(
             run.stdout,
-            "10.0.1.1/24 fdbb:5737:6e53:9bf7::40/64 2001:db8:5737:6e53::40/64\n"
-            "10.0.1.1/24 fdbb:5737:6e53:9bf7::40/64\n"
-            "fdbb:5737:6e53:9bf7::40/64\n",
+            "10.0.1.1/24 fdbb:5737:6e53:9bf7::40/64 2001:db8:5737:6e53::40/64\n",
         )
 
     def test_auto_ip_routing_evidence_maps_unnamed_wan_without_breaking_bridge_mode(self) -> None:

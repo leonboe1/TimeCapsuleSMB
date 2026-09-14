@@ -247,8 +247,7 @@ const char *ipv4_to_string(uint32_t ipv4_addr, char *out, size_t out_len);
 
 void filter_smb_bind_link_contexts(struct link_context_set *out,
                                                             const struct link_context_set *in,
-                                                            int lan_only,
-                                                            int unnamed_lan_fallback);
+                                                            int lan_only);
 int print_smb_link_bind_tokens(FILE *stream, const struct link_context_set *set);
 #ifdef TC_NATIVE_TEST
 int print_iface_context_cidrs(FILE *stream, const struct iface_context_set *set);
