@@ -4,8 +4,8 @@ This branch starts from upstream commit `f7455afc82f01b009536a73c79dc75dd95e1722
 It addresses the review prompted by [upstream issue 299](https://github.com/jamesyc/TimeCapsuleSMB/issues/299).
 The original project is by James Chang. These changes do not establish malicious intent.
 
-**Build validation is in progress. The checked-in router binaries have not yet been
-replaced by the independent rebuild. Do not deploy this intermediate snapshot.**
+**All twelve remaining router binaries have been independently rebuilt from pinned
+sources. Validation on actual Time Capsule hardware remains outstanding.**
 No router has been contacted, flashed, repaired, or configured during this work.
 
 | Review finding | Change |
@@ -16,7 +16,7 @@ No router has been contacted, flashed, repaired, or configured during this work.
 | F6: unsafe disk repair | Abort after failed unmount or an independently detected live mount. Propagate repair failures and reboot only after success. |
 | F7: firmware origin/cache validation | Pin 110 Apple images by HTTPS origin, model, version, size and SHA256. Check cached and local images; reject redirects and bound downloads/decompression. |
 | F8: broad SMB exposure | Default to LAN-only and reject interfaces whose LAN role cannot be identified. Preserve an existing explicit interface-policy choice. |
-| F10: dependencies/provenance | Pin build source commits, archive hashes, Python dependencies/runtime and CI actions. Update crypto dependencies and build GMP/zlib independently of the legacy SDK. Independent ARM rebuilds are in progress. |
+| F10: dependencies/provenance | Pin build source commits, archive hashes, Python dependencies/runtime and CI actions. Update crypto dependencies and build GMP/zlib independently of the legacy SDK. Replace all twelve remaining ARM executables and publish source/toolchain hashes, component inventory, linker maps and build logs. |
 | F11: recoverable ACP credentials, found during patch validation | Block direct legacy ACP before opening a socket. Bootstrap and firmware recovery require an explicit one-command override on an isolated network. ACP's reversible password encoding and lack of server authentication cannot be repaired by SSH host-key verification. |
 
 Additional fixes keep updates/downloads on this fork, invalidate caches from other
@@ -34,6 +34,32 @@ compromised router is clean.
 Enroll an independently verified SSH fingerprint with `tcapsule trust-host` as
 shown in the README. Unknown/changed keys stop the connection. Removing the
 fingerprint checks would defeat this protection.
+
+Direct legacy ACP remains insecure even with pinned SSH keys. Its packet header
+XORs the administrator password with a public constant, allowing recovery of the
+encoded password bytes. ACP also lacks authenticated server identity. The fork
+blocks ACP before opening a socket unless `TCAPSULE_ALLOW_INSECURE_ACP=1` is set
+for that command. This exception is for necessary setup/recovery on an isolated
+network; it does not make ACP secure. See the README for the bootstrap procedure.
+
+## Rebuild and regression evidence
+
+The NetBSD 7, NetBSD 4 little-endian, and NetBSD 4 big-endian SDK distributions and
+all three payload builds completed. The NetBSD 7 SDK retains the existing ABI used
+by the NetBSD 6 payload family. All twelve ELF files are static ARM executables;
+all three Samba binaries remain below the existing 10 MiB size limit.
+
+All nine native helpers matched repeat builds byte for byte. A clean rebuild of
+the NetBSD 7 Samba binary, including its third-party dependencies, also produced
+identical executable bytes. No equivalent repeat-build claim is made for the
+other two Samba binaries or for the host toolchain.
+
+[Build provenance](build/provenance/README.md) includes the exact inputs, component
+versions, compressed logs and linker maps. Tests compare every packaged payload
+with its independently built counterpart and validate the evidence hashes.
+[CI](https://github.com/leonboe1/TimeCapsuleSMB/actions/workflows/ci.yml?query=branch%3Asecurity%2Fharden-fork)
+runs Python tests on Linux/macOS with Python 3.10, 3.12 and 3.14, Swift tests,
+native and patched-Samba sanitizer regressions, and macOS app packaging validation.
 
 ## Validation limits
 
