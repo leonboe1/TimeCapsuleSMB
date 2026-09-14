@@ -351,6 +351,11 @@ class CliTests(unittest.TestCase):
 
     def setUp(self) -> None:
         self._exit_stack = ExitStack()
+        self._firmware_entries = []
+        self._exit_stack.enter_context(mock.patch(
+            "timecapsulesmb.apple_firmware.pinned_firmware_entries",
+            side_effect=lambda: list(self._firmware_entries),
+        ))
         self._telemetry_client = mock.Mock()
         for target in (
             "timecapsulesmb.cli.configure.TelemetryClient.from_config",
@@ -531,7 +536,14 @@ class CliTests(unittest.TestCase):
             unk_0x1c=0,
         )
         inner = compose_basebinary(inner_header, bank[: self.flash_bank_end_offset(bank)], key=selected_key)
-        return compose_basebinary(outer_header, inner)
+        template = compose_basebinary(outer_header, inner)
+        # Authorize only this fixture's exact bytes; production hash checks still run.
+        self._firmware_entries.append({
+            "productID": str(product_id), "version": "7.8.1",
+            "location": f"https://apsu.apple.com/{product_id}/7.8.1.basebinary",
+            "sizeInBytes": len(template), "sha256": sha256_hex(template), "newest": True,
+        })
+        return template
 
     def make_patched_flash_bank(self, bank: bytes, secondary: bytes | None = None) -> bytes:
         fallback_secondary = secondary or self.make_flash_bank(release=b"NetBSD 4.0_BETA2 #0: old")
@@ -6964,7 +6976,7 @@ class CliTests(unittest.TestCase):
                 {
                     "productID": "113",
                     "version": "7.8.1",
-                    "location": "http://example.invalid/113/7.8.1.basebinary",
+                    "location": "https://apsu.apple.com/113/7.8.1.basebinary",
                     "sizeInBytes": len(template),
                     "newest": True,
                 }
@@ -6974,7 +6986,7 @@ class CliTests(unittest.TestCase):
         def fake_download(url: str, **_kwargs: object) -> bytes:
             if url == cli_flash.APPLE_FIRMWARE_CATALOG_URL:
                 return catalog
-            self.assertEqual(url, "http://example.invalid/113/7.8.1.basebinary")
+            self.assertEqual(url, "https://apsu.apple.com/113/7.8.1.basebinary")
             return template
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -6998,9 +7010,9 @@ class CliTests(unittest.TestCase):
 
             cached_templates = list((Path(tmp) / "cache" / "113").glob("*.basebinary"))
 
-        self.assertEqual(download_mock.call_count, 2)
+        self.assertEqual(download_mock.call_count, 1)
         self.assertEqual(len(cached_templates), 1)
-        self.assertEqual(payload.template_source, "http://example.invalid/113/7.8.1.basebinary")
+        self.assertEqual(payload.template_source, "https://apsu.apple.com/113/7.8.1.basebinary")
         self.assertEqual(payload.template_product_id, "113")
         self.assertEqual(payload.template_version, "7.8.1")
 
@@ -7008,7 +7020,7 @@ class CliTests(unittest.TestCase):
         primary = self.make_flash_bank(release=b"NetBSD 4.0_STABLE #0: current")
         secondary = self.make_flash_bank(release=b"NetBSD 4.0_BETA2 #0: old")
         template = self.make_firmware_template(primary, product_id=113)
-        template_url = "http://example.invalid/113/7.8.1.basebinary"
+        template_url = "https://apsu.apple.com/113/7.8.1.basebinary"
         catalog = plistlib.dumps({
             "firmwareUpdates": [
                 {
@@ -7058,7 +7070,7 @@ class CliTests(unittest.TestCase):
                 )
             refreshed_cache = cached_path.read_bytes()
 
-        self.assertEqual(calls, [cli_flash.APPLE_FIRMWARE_CATALOG_URL, template_url])
+        self.assertEqual(calls, [template_url])
         self.assertEqual(refreshed_cache, template)
         self.assertEqual(payload.template_sha256, sha256_hex(template))
 
@@ -7066,7 +7078,7 @@ class CliTests(unittest.TestCase):
         primary = self.make_flash_bank(release=b"NetBSD 4.0_STABLE #0: current")
         secondary = self.make_flash_bank(release=b"NetBSD 4.0_BETA2 #0: old")
         template = self.make_firmware_template(primary, product_id=113)
-        template_url = "http://example.invalid/113/7.8.1.basebinary"
+        template_url = "https://apsu.apple.com/113/7.8.1.basebinary"
         catalog = plistlib.dumps({
             "firmwareUpdates": [
                 {
@@ -7116,7 +7128,7 @@ class CliTests(unittest.TestCase):
                 )
             refreshed_cache = cached_path.read_bytes()
 
-        self.assertEqual(calls, [cli_flash.APPLE_FIRMWARE_CATALOG_URL, template_url])
+        self.assertEqual(calls, [template_url])
         self.assertEqual(refreshed_cache, template)
         self.assertTrue(match.matched)
         self.assertEqual(match.template_sha256, sha256_hex(template))
@@ -7130,6 +7142,8 @@ class CliTests(unittest.TestCase):
             modified_payload = bytes([template.inner.payload[0] ^ 0x01]) + template.inner.payload[1:]
             modified_inner = compose_basebinary(template.inner.header, modified_payload, key=template.inner.key)
             template_path.write_bytes(compose_basebinary(template.outer.header, modified_inner, key=template.outer.key))
+            # This fixture is approved, but must still match the live bank before patching.
+            self._firmware_entries[-1]["sha256"] = sha256_hex(template_path.read_bytes())
             with self.flash_zopfli_available():
                 analysis = cli_flash.analyze_flash_banks(
                     primary_data=primary,
@@ -7176,7 +7190,7 @@ class CliTests(unittest.TestCase):
                 )
 
         self.assertIn("do not have firmware encryption keys", str(raised.exception))
-        self.assertIn("https://github.com/jamesyc/TimeCapsuleSMB/issues", str(raised.exception))
+        self.assertIn("https://github.com/leonboe1/TimeCapsuleSMB/issues", str(raised.exception))
 
     def test_flash_write_refuses_unsupported_firmware_key_before_acp(self) -> None:
         output = io.StringIO()
@@ -7213,7 +7227,7 @@ class CliTests(unittest.TestCase):
         self.assertEqual(rc, 1)
         flash_mock.assert_not_called()
         self.assertIn("do not have firmware encryption keys", output.getvalue())
-        self.assertIn("https://github.com/jamesyc/TimeCapsuleSMB/issues", output.getvalue())
+        self.assertIn("https://github.com/leonboe1/TimeCapsuleSMB/issues", output.getvalue())
         finished = command_context.finish.call_args.kwargs
         self.assertEqual(finished["result"], "failure")
         self.assertIn("flash_error_stage=plan_flash", finished["error"])
@@ -7908,7 +7922,7 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(rc, 1)
         flash_mock.assert_not_called()
-        self.assertIn("does not match device syAP", output.getvalue())
+        self.assertIn("not a reviewed image for this device", output.getvalue())
         self.assertIn("flash_error_stage=plan_flash", command_context.finish.call_args.kwargs["error"])
         self.assertNotIn("flash_error_stage", command_context.finish.call_args.kwargs)
 
