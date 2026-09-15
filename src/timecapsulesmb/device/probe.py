@@ -18,6 +18,7 @@ from timecapsulesmb.transport.local import tcp_open
 from timecapsulesmb.transport.errors import (
     SshAlgorithmNegotiationError,
     SshAuthenticationError,
+    SshHostIdentityError,
     TransportError,
 )
 from timecapsulesmb.transport.ssh import SshCommandTimeout, SshConnection, run_ssh, run_ssh_capture_bytes, ssh_opts_use_proxy
@@ -500,6 +501,7 @@ class ProbeResult:
     airport_model: str | None = None
     airport_syap: str | None = None
     elf_endianness_detail: str | None = None
+    host_identity_failed: bool = False
 
     @property
     def ssh_port_reachable(self) -> bool:
@@ -690,6 +692,7 @@ def probe_device_conn(connection: SshConnection) -> ProbeResult:
         return ProbeResult(
             ssh_status=SshAccessStatus.TRANSPORT_FAILED,
             error=str(exc) or "SSH transport failed.",
+            host_identity_failed=isinstance(exc, SshHostIdentityError),
             os_name="",
             os_release="",
             arch="",

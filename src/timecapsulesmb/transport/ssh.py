@@ -18,6 +18,7 @@ from timecapsulesmb.transport.errors import (
     SshAlgorithmNegotiationError,
     SshAuthenticationError,
     SshClientConfigError,
+    SshHostIdentityError,
     SshCommandTimeout,
     SshError,
     SshNetworkError,
@@ -140,7 +141,7 @@ def _classify_ssh_client_error_line(line: str) -> SshError | None:
 
     lowered = line.lower()
     if any(value in lowered for value in ("host key verification failed", "remote host identification has changed", "you have requested strict checking")):
-        return SshClientConfigError(
+        return SshHostIdentityError(
             "SSH host identity verification failed. Verify the device fingerprint "
             "and use tcapsule trust-host for first-time enrollment. "
             "A changed key requires an explicit key rotation.\n" + line

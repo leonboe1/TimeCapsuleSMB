@@ -4,7 +4,7 @@ import subprocess
 
 import pytest
 
-from timecapsulesmb.cli import trust_host
+from timecapsulesmb.services import host_trust as trust_host
 from timecapsulesmb.transport import ssh
 
 

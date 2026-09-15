@@ -26,6 +26,10 @@ class SshClientConfigError(SshError):
     """Raised when the local SSH client rejects our options or user config."""
 
 
+class SshHostIdentityError(SshClientConfigError):
+    """Raised when strict host key verification rejects the device identity."""
+
+
 class SshNetworkError(SshError):
     """Raised when the SSH client reports a network-level failure."""
 
