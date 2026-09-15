@@ -55,7 +55,8 @@ fingerprint checks would defeat this protection.
 Direct legacy ACP remains insecure even with pinned SSH keys. Its packet header
 XORs the administrator password with a public constant, allowing recovery of the
 encoded password bytes. ACP also lacks authenticated server identity. The fork
-blocks ACP before opening a socket unless `TCAPSULE_ALLOW_INSECURE_ACP=1` is set
+blocks ACP before opening a socket unless the GUI grants the narrowly scoped
+SSH-setup confirmation described below or `TCAPSULE_ALLOW_INSECURE_ACP=1` is set
 for that command. This exception is for necessary setup/recovery on an isolated
 network; it does not make ACP secure. See the README for the bootstrap procedure.
 
@@ -107,3 +108,26 @@ The current Samba baseline is 4.25.0rc2 because the downstream patch series reli
 on its stream-parent and AFP_AfpInfo fixes. It remains a release candidate, not a
 stable-release assurance claim. The legacy NetBSD ABI/libc and Apple's firmware
 remain limitations even after updating linked third-party libraries.
+
+
+## GUI SSH onboarding (2026-09-15)
+
+Save Device now uses explicit, request-bound confirmations for SSH enablement and
+first-time host-key enrollment. The GUI legacy ACP exception is scoped to one
+host and only the exact `dbug=0x3000` and `acRB=0` writes; it is cleared on every
+exit, including cancellation and a subsequent fingerprint confirmation. It does
+not authorize firmware writes or change the CLI environment-override policy.
+Network isolation remains necessary because ACP itself is insecure.
+
+A fingerprint scan is untrusted until the user verifies the device identity.
+Enrollment re-scans and matches the approved fingerprint; existing trusted keys
+are never replaced through onboarding. Legacy SSH scanning can use a temporary
+known_hosts file with all credential authentication disabled, no user SSH config,
+no commands and no forwarding. That temporary file is deleted; it is never the
+store used for authenticated device operations. Normal connections continue to
+require strict host-key checking. Saving a profile requires authenticated probing
+and does not install Samba.
+
+Mock transport tests exercise the confirmation/replay flow, exact ACP write
+scope, changed fingerprints, existing-key refusal and credential-free scan
+options. These do not establish hardware compatibility or backup integrity.

@@ -238,7 +238,7 @@ final class RecoveryActionMapperTests: LocalizedTestCase {
                 "Use discovery or enter the current LAN IP address."
             ],
             suggestedOperation: "configure",
-            message: "TimeCapsuleSMB could not reach the AirPort ACP service before enabling SSH. Backups or AirPort Utility may still work even when ACP is blocked.",
+            message: "TimeCapsuleSMB could not reach the AirPort ACP service before enabling SSH. Backups or AirPort Utility may still work even when ACP is blocked. No ACP password was sent. Check the current IP in AirPort Utility, use the main LAN rather than a guest network, and check macOS Local Network permission.",
             localizationKey: "configure.remote_error.acp_port_probe"
         ).decode(BackendRecoveryPayload.self)
         let error = BackendErrorViewModel(
@@ -253,7 +253,7 @@ final class RecoveryActionMapperTests: LocalizedTestCase {
         XCTAssertEqual(english.title, "AirPort not reachable at this address")
         XCTAssertEqual(
             english.detail,
-            "TimeCapsuleSMB could not reach the AirPort ACP service before enabling SSH. Backups or AirPort Utility may still work even when ACP is blocked."
+            "TimeCapsuleSMB could not reach the AirPort ACP service before enabling SSH. Backups or AirPort Utility may still work even when ACP is blocked. No ACP password was sent. Check the current IP in AirPort Utility, use the main LAN rather than a guest network, and check macOS Local Network permission."
         )
         XCTAssertEqual(english.steps[0], "Disable VPN or security software that routes local network traffic, then try again.")
         XCTAssertEqual(english.steps.count, 4)

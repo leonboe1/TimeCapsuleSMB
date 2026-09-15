@@ -134,6 +134,10 @@ struct AddDeviceView: View {
                 .disabled(store.isRunning)
             }
 
+            Text(L10n.string("add_device.setup_help"))
+                .font(.callout)
+                .foregroundStyle(.secondary)
+
             if let profile = store.savedProfile {
                 Label(L10n.format("add_device.saved", profile.title), systemImage: "checkmark.circle")
                     .foregroundStyle(.green)

@@ -728,7 +728,7 @@
 "backend.recovery.deploy.remote_error.wait_for_reboot_up.action.4" = "Auf NetBSD 4-Geräten führen Sie tcapsule activate aus, sobald SSH erreichbar ist; Die Bereitstellung kam nicht weit genug, um Samba nach dem Neustart zu aktivieren.";
 "backend.recovery.deploy.remote_error.wait_for_reboot_up.action.5" = "Wenn sich Ihr Gerät selbst zurücksetzt, lesen Sie https://github.com/jamesyc/TimeCapsuleSMB/issues/177.";
 "backend.recovery.configure.remote_error.acp_port_probe.title" = "AirPort ist unter dieser Adresse nicht erreichbar";
-"backend.recovery.configure.remote_error.acp_port_probe.message" = "TimeCapsuleSMB konnte den AirPort ACP-Dienst vor dem Aktivieren von SSH nicht erreichen. Backups oder das AirPort-Dienstprogramm können weiterhin funktionieren, auch wenn ACP blockiert ist.";
+"backend.recovery.configure.remote_error.acp_port_probe.message" = "TimeCapsuleSMB konnte den AirPort ACP-Dienst vor dem Aktivieren von SSH nicht erreichen. Backups oder das AirPort-Dienstprogramm können weiterhin funktionieren, auch wenn ACP blockiert ist. Es wurde kein ACP-Passwort übertragen. Prüfe die aktuelle IP-Adresse im AirPort-Dienstprogramm, verwende das Hauptnetz statt eines Gastnetzes und prüfe die macOS-Berechtigung „Lokales Netzwerk“.";
 "backend.recovery.configure.remote_error.acp_port_probe.action.1" = "Deaktivieren Sie VPN oder Sicherheitssoftware, die lokalen Netzwerkverkehr weiterleitet, und versuchen Sie es erneut.";
 "backend.recovery.configure.remote_error.acp_port_probe.action.2" = "Prüfen Sie, ob die IP-Adresse die Time Capsule- oder AirPort-Adresse ist.";
 "backend.recovery.configure.remote_error.acp_port_probe.action.3" = "Bestätigen Sie, dass Sie im selben Netzwerk wie das Gerät sind.";
@@ -942,3 +942,15 @@
 "timeline.deploy.detail.upload_rsync" = "rsync und seine Daemon-Konfiguration werden auf das Payload-Volume kopiert.";
 "timeline.deploy.title.upload_rsync" = "rsync hochladen";
 "toggle.enable_rsync" = "rsync aktivieren";
+
+// Guided first-time SSH setup
+"add_device.setup_help" = "„Gerät speichern“ prüft die Verbindung und führt durch die SSH-Aktivierung und die Überprüfung der Geräteidentität. Samba wird dabei nicht installiert. Die erstmalige SSH-Aktivierung benötigt ein isoliertes Netzwerk und unterbricht kurz WLAN und Dateifreigaben.";
+"confirm.ssh_setup.enable_legacy.title" = "SSH aktivieren und neu starten?";
+"confirm.ssh_setup.enable_legacy.message" = "SSH ist auf %@ deaktiviert. Diese einmalige Einrichtung überträgt das Administratorpasswort über das veraltete AirPort-ACP-Protokoll in wiederherstellbarer Form und startet das Gerät neu. WLAN und Dateifreigaben werden kurz unterbrochen.\n\nIsoliere zuerst das Netzwerk: Verbinde diesen Mac mit einem LAN-Ethernet-Port, schalte das WLAN des Macs aus, trenne die WAN-Verbindung und alle anderen Ethernet-Geräte der Time Capsule und trenne auch alle anderen WLAN-Geräte. Fahre erst fort, wenn das Netzwerk isoliert ist.\n\nDies aktiviert SSH. Samba wird nicht installiert und Backups werden nicht gelöscht.";
+"confirm.ssh_setup.enable_legacy.action" = "SSH aktivieren und neu starten";
+"confirm.ssh_setup.trust_host.title" = "SSH-Identität des Geräts überprüfen";
+"confirm.ssh_setup.trust_host.message" = "Gerät: %@\nSSH-Fingerabdruck: %@\n\nEin ausgelesener Fingerabdruck allein beweist die Identität nicht. Vergleiche ihn mit einer vertrauenswürdigen Aufzeichnung oder stelle sicher, dass dieser Mac direkt mit deiner Time Capsule in einem isolierten Netzwerk ohne andere Geräte verbunden ist. Vertraue dem Schlüssel erst dann. Die App speichert ihn lokal und verlangt ihn bei zukünftigen SSH-Verbindungen.";
+"confirm.ssh_setup.trust_host.action" = "Verifiziertem Gerät vertrauen";
+"timeline.stage.scan_host_key" = "SSH-Fingerabdruck auslesen";
+"timeline.stage.confirm_host_key" = "SSH-Identität überprüfen";
+"timeline.stage.save_host_key" = "Verifizierten SSH-Schlüssel speichern";

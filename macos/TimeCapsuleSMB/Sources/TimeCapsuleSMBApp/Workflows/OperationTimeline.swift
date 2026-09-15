@@ -205,6 +205,8 @@ enum OperationTimelineBuilder {
             return L10n.string("timeline.stage.enabling_ssh")
         case ("configure", "wait_for_ssh_after_acp"):
             return L10n.string("timeline.stage.waiting_for_device")
+        case ("configure", "scan_host_key"), ("configure", "confirm_host_key"), ("configure", "save_host_key"):
+            return L10n.string("timeline.stage.\(stage)")
         case ("configure", "write_env"):
             return L10n.string("timeline.stage.saving_device")
         case ("update-config-settings", "load_existing_config"),

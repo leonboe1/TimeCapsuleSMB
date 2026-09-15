@@ -2,6 +2,34 @@ import XCTest
 @testable import TimeCapsuleSMBApp
 
 final class PendingConfirmationTests: LocalizedTestCase {
+    func testSSHSetupConfirmationPreservesFingerprintAndRiskNotice() throws {
+        let fingerprint = "SHA256:abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG"
+        for language in [AppLanguage.english, .german] {
+            L10n.apply(language: language)
+            let trust = try XCTUnwrap(PendingConfirmation(
+                confirmationEvent: BackendEvent(
+                    type: "error", operation: "configure", code: "confirmation_required",
+                    details: .object([
+                        "confirmation_id": .string("key-approval"),
+                        "presentation_id": .string("ssh_setup.trust_host"),
+                        "presentation_values": .object([
+                            "host": .string("192.168.178.61"), "fingerprint": .string(fingerprint)
+                        ])
+                    ])
+                ), originalParams: [:]
+            ))
+            XCTAssertTrue(trust.message.contains(fingerprint))
+            XCTAssertTrue(trust.message.contains("192.168.178.61"))
+            XCTAssertFalse(trust.message.contains("%@"))
+            XCTAssertEqual(trust.params["confirmation_id"], .string("key-approval"))
+        }
+        L10n.apply(language: .english)
+        let notice = L10n.format("confirm.ssh_setup.enable_legacy.message", "Office Capsule")
+        XCTAssertTrue(notice.contains("recoverable administrator password"))
+        XCTAssertTrue(notice.contains("disconnect its other Wi-Fi clients"))
+        XCTAssertTrue(notice.contains("does not install Samba"))
+    }
+
     func testLocalizedStringsLoadFromResourceBundle() {
         XCTAssertEqual(L10n.string("screen.readiness"), "Readiness")
         XCTAssertEqual(L10n.string("toolbar.cancel"), "Cancel")

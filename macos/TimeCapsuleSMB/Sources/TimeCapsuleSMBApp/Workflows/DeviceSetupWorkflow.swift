@@ -376,6 +376,7 @@ final class DeviceSetupWorkflow: ObservableObject {
     }
 
     private func applyConfirmationCancelled() {
+        pendingPassword = ""
         error = nil
         currentStage = nil
         savedProfile = nil

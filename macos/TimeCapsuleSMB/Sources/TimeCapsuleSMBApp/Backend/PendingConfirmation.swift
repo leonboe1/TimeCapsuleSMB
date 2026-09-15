@@ -80,7 +80,8 @@ private struct ConfirmationPresentation {
         }
         let values = detailObject(details, "presentation_values")
         switch presentationKey {
-        case "configure.enable_ssh_reboot",
+        case "ssh_setup.enable_legacy",
+             "configure.enable_ssh_reboot",
              "ssh_access.enable_reboot",
              "deploy.activate_now",
              "deploy.netbsd4",
@@ -92,6 +93,12 @@ private struct ConfirmationPresentation {
                 return nil
             }
             return format(template, deviceName)
+        case "ssh_setup.trust_host":
+            guard let host = stringValue(values, "host"),
+                  let fingerprint = stringValue(values, "fingerprint") else {
+                return nil
+            }
+            return format(template, host, fingerprint)
         case "repair_xattrs":
             guard let path = stringValue(values, "path") else {
                 return nil

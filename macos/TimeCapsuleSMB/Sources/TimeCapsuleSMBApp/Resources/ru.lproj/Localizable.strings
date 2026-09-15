@@ -942,3 +942,15 @@
 "timeline.deploy.detail.upload_rsync" = "Копирование rsync и конфигурации его демона на том полезной нагрузки.";
 "timeline.deploy.title.upload_rsync" = "Загрузить rsync";
 "toggle.enable_rsync" = "Включить rsync";
+
+// English fallback for guided SSH setup; translation pending.
+"add_device.setup_help" = "Save Device checks the connection and guides you through enabling SSH and verifying the device’s identity. It does not install Samba. First-time SSH enablement requires an isolated network and briefly interrupts Wi-Fi and file sharing.";
+"confirm.ssh_setup.enable_legacy.title" = "Enable SSH and reboot?";
+"confirm.ssh_setup.enable_legacy.message" = "SSH is closed on %@. This one-time setup sends a recoverable administrator password over legacy AirPort ACP and reboots the device, briefly interrupting Wi-Fi and file sharing.\n\nFirst isolate the network: connect this Mac to a LAN Ethernet port, turn off the Mac’s Wi-Fi, disconnect the Time Capsule’s WAN and other Ethernet clients, and disconnect its other Wi-Fi clients. Continue only once isolated.\n\nThis enables SSH; it does not install Samba or erase backups. Enable SSH and reboot now?";
+"confirm.ssh_setup.enable_legacy.action" = "Enable SSH and reboot";
+"confirm.ssh_setup.trust_host.title" = "Verify this device’s SSH identity";
+"confirm.ssh_setup.trust_host.message" = "Device: %@\nSSH fingerprint: %@\n\nA scanned fingerprint alone does not prove identity. Compare it with a trusted record, or verify that this Mac is connected directly to your Time Capsule on an isolated network with no other clients. Only then trust this key. The app will save it locally and require it for future SSH connections.";
+"confirm.ssh_setup.trust_host.action" = "Trust verified device";
+"timeline.stage.scan_host_key" = "Read SSH fingerprint";
+"timeline.stage.confirm_host_key" = "Verify SSH identity";
+"timeline.stage.save_host_key" = "Save verified SSH key";
