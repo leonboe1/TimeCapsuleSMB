@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 import os
 import socket
@@ -30,6 +32,31 @@ HEADER = struct.Struct("!4s8i12x32s48x")
 PROPERTY_HEADER = struct.Struct("!4s2I")
 
 DBUG_SSH_VALUE = 0x3000
+
+_ssh_setup_host: ContextVar[str | None] = ContextVar("acp_ssh_setup_host", default=None)
+
+
+@contextmanager
+def confirmed_ssh_setup(host: str):
+    """Authorize only SSH enablement and reboot for one confirmed GUI request."""
+    token = _ssh_setup_host.set(host)
+    try:
+        yield
+    finally:
+        _ssh_setup_host.reset(token)
+
+
+def _is_confirmed_ssh_setup(host: str, command: int, payload: bytes, flags: int) -> bool:
+    return (
+        _ssh_setup_host.get() == host
+        and command == COMMAND_SETPROP
+        and flags == 0
+        and payload in (
+            _compose_property_element("dbug", DBUG_SSH_VALUE),
+            _compose_property_element("acRB", 0),
+        )
+    )
+
 
 LogCallback = Callable[[str], None]
 
@@ -268,7 +295,7 @@ def _open_connection(host: str, *, timeout: float) -> socket.socket:
 def _send_message(host: str, password: str, command: int, payload: bytes, *, flags: int = 0, timeout: float) -> socket.socket:
     # The header key is reversible XOR with a public constant, not encryption.
     # This protocol also provides no authenticated identity for the server.
-    if os.environ.get("TCAPSULE_ALLOW_INSECURE_ACP") != "1":
+    if os.environ.get("TCAPSULE_ALLOW_INSECURE_ACP") != "1" and not _is_confirmed_ssh_setup(host, command, payload, flags):
         raise ACPSecurityError(
             "Direct ACP is disabled: it exposes a recoverable administrator password "
             "and does not authenticate the device. For one-time setup or firmware "
