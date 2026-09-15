@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from timecapsulesmb.app.confirmations import build_confirmation, require_confirmation
+from contextlib import nullcontext
+
+from timecapsulesmb.app.confirmations import build_confirmation, require_confirmation, legacy_ssh_setup_message
 from timecapsulesmb.app.context import AppOperationContext
 from timecapsulesmb.app.contracts import set_ssh_payload
 from timecapsulesmb.app.ops.common import load_request_config
 from timecapsulesmb.core.net import endpoint_host
-from timecapsulesmb.integrations.acp import ACPAuthError
+from timecapsulesmb.integrations.acp import ACPAuthError, confirmed_ssh_setup
 from timecapsulesmb.services.app import AppOperationError, OperationResult, bool_param, string_param
 from timecapsulesmb.services.runtime import resolve_env_connection
 from timecapsulesmb.services.set_ssh import (
@@ -41,12 +43,13 @@ def set_ssh_operation(params: dict[str, object], context: AppOperationContext) -
             context.stage("confirm_enable_ssh")
             _require_enable_confirmation(params, context=context, connection_host=connection.host, acp_host=acp_host)
         try:
-            result = enable_set_ssh(
-                connection,
-                no_wait=bool_param(params, "no_wait"),
-                callbacks=context.to_operation_callbacks(),
-                initial=initial,
-            )
+            with confirmed_ssh_setup(acp_host) if not initial.ssh_port_reachable else nullcontext():
+                result = enable_set_ssh(
+                    connection,
+                    no_wait=bool_param(params, "no_wait"),
+                    callbacks=context.to_operation_callbacks(),
+                    initial=initial,
+                )
         except ACPAuthError as exc:
             raise AppOperationError(
                 "The AirPort admin password did not work.",
@@ -107,7 +110,7 @@ def _require_enable_confirmation(
             operation=context.operation,
             params=params,
             title="Enable SSH and reboot?",
-            message=f"Enable SSH using AirPort ACP on {acp_host} and reboot this AirPort device?",
+            message=legacy_ssh_setup_message(acp_host),
             action_title="Enable SSH and reboot",
             risk="reboot",
             summary="Enable SSH through AirPort ACP and reboot the AirPort device",
@@ -116,8 +119,9 @@ def _require_enable_confirmation(
                 "acp_host": acp_host,
                 "device_name": acp_host,
                 "requires_reboot": True,
+                "legacy_acp_ssh_setup": 1,
             },
-            presentation_id="ssh_access.enable_reboot",
+            presentation_id="ssh_setup.enable_legacy",
             presentation_values={
                 "host": acp_host,
                 "device_name": acp_host,

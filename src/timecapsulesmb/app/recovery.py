@@ -258,7 +258,9 @@ _STAGE_RECOVERY: dict[tuple[str, str, str], RecoveryInfo] = {
     ("configure", "remote_error", "acp_port_probe"): RecoveryInfo(
         "AirPort not reachable at this address",
         "TimeCapsuleSMB could not reach the AirPort ACP service before enabling SSH. "
-        "Backups or AirPort Utility may still work even when ACP is blocked.",
+        "Backups or AirPort Utility may still work even when ACP is blocked. "
+        "No ACP password was sent. Check the current IP in AirPort Utility, use the main LAN "
+        "rather than a guest network, and check macOS Local Network permission.",
         (
             "Disable VPN or security software that routes local network traffic, then try again.",
             "Check that the IP address is the Time Capsule or AirPort address.",

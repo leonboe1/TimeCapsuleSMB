@@ -116,3 +116,15 @@ def require_confirmation(
     if supplied_confirmation_id(params) == confirmation.confirmation_id:
         return
     raise AppConfirmationRequired(confirmation)
+
+
+def legacy_ssh_setup_message(device_name: str) -> str:
+    return (
+        f"SSH is closed on {device_name}. This one-time setup sends a recoverable "
+        "administrator password over legacy AirPort ACP and reboots the device, "
+        "briefly interrupting Wi-Fi and file sharing.\n\n"
+        "First isolate the network: connect this Mac to a LAN Ethernet port, turn off "
+        "the Mac’s Wi-Fi, disconnect the Time Capsule’s WAN and other Ethernet clients, "
+        "and disconnect its other Wi-Fi clients. Continue only once isolated.\n\n"
+        "This enables SSH; it does not install Samba or erase backups. Enable SSH and reboot now?"
+    )

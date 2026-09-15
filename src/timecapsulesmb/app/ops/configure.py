@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from contextlib import ExitStack
+import subprocess
 import os
 import sys
 import uuid
 
 from timecapsulesmb.app.context import AppOperationContext
-from timecapsulesmb.app.confirmations import build_confirmation, require_confirmation
+from timecapsulesmb.app.confirmations import build_confirmation, require_confirmation, legacy_ssh_setup_message
 from timecapsulesmb.app.contracts import configure_payload
 from timecapsulesmb.core.config import (
     DEFAULTS,
@@ -16,7 +18,7 @@ from timecapsulesmb.core.net import endpoint_host
 from timecapsulesmb.core.paths import resolve_app_paths
 from timecapsulesmb.core.smb_policy import validate_smb_protocol_options
 from timecapsulesmb.device.probe import probe_connection_state
-from timecapsulesmb.integrations.acp import ACPConnectionError, ACPError
+from timecapsulesmb.integrations.acp import ACPConnectionError, ACPError, confirmed_ssh_setup
 from timecapsulesmb.services.app import (
     AppOperationError,
     OperationResult,
@@ -29,6 +31,7 @@ from timecapsulesmb.services.app import (
     string_param,
 )
 from timecapsulesmb.services import configure as configure_service
+from timecapsulesmb.services import host_trust
 from timecapsulesmb.services.configure import (
     AIRPORT_ADMIN_PASSWORD_REJECTED_MESSAGE,
     build_managed_config_env_values,
@@ -88,7 +91,7 @@ def require_enable_ssh_confirmation(params: dict[str, object], *, host: str) -> 
             operation="configure",
             params=params,
             title="Enable SSH and reboot?",
-            message=f"SSH is closed on {device_name}. Enable SSH using AirPort ACP and reboot this AirPort device?",
+            message=legacy_ssh_setup_message(device_name),
             action_title="Enable SSH and reboot",
             risk="reboot",
             summary="Enable SSH through AirPort ACP and reboot the AirPort device",
@@ -96,8 +99,9 @@ def require_enable_ssh_confirmation(params: dict[str, object], *, host: str) -> 
                 "host": host,
                 "device_name": device_name,
                 "requires_reboot": True,
+                "legacy_acp_ssh_setup": 1,
             },
-            presentation_id="configure.enable_ssh_reboot",
+            presentation_id="ssh_setup.enable_legacy",
             presentation_values={
                 "device_name": device_name,
                 "requires_reboot": True,
@@ -218,14 +222,44 @@ def configure_operation(params: dict[str, object], context: AppOperationContext)
     except ValueError as exc:
         raise AppOperationError(str(exc), code="validation_failed") from exc
 
+    setup_scope = ExitStack()
+
     def before_enable_ssh(_connection, _probed_state) -> None:
         context.stage("confirm_enable_ssh")
         require_enable_ssh_confirmation(params, host=host)
+        setup_scope.enter_context(confirmed_ssh_setup(endpoint_host(host)))
 
     def probe_for_context(connection):
         context.connection = connection
         probed_state = probe_connection_state(connection)
         context.apply_probe_state(probed_state)
+        if probed_state.probe_result.host_identity_failed:
+            context.stage("scan_host_key")
+            try:
+                fingerprint = host_trust.scan_untrusted_fingerprint(host)
+                context.stage("confirm_host_key")
+                require_confirmation(params, build_confirmation(
+                    operation="configure", params=params,
+                    title="Verify this device’s SSH identity",
+                    message=(f"Device: {endpoint_host(host)}\nSSH fingerprint: {fingerprint}\n\n"
+                             "A scanned fingerprint alone does not prove identity. Compare it with a trusted "
+                             "record, or verify that this Mac is connected directly to your Time Capsule on "
+                             "an isolated network with no other clients. Only then trust this key. "
+                             "The app will save it locally and require it for future SSH connections."),
+                    action_title="Trust verified device", risk="trust",
+                    summary="Save the verified SSH host key locally",
+                    context={"host": host, "fingerprint": fingerprint},
+                    presentation_id="ssh_setup.trust_host",
+                    presentation_values={"host": endpoint_host(host), "fingerprint": fingerprint},
+                ))
+                context.stage("save_host_key")
+                # Re-scan inside enrollment: an intervening identity change must fail.
+                host_trust.enroll(host, fingerprint)
+            except (ValueError, OSError, subprocess.SubprocessError) as exc:
+                raise AppOperationError(str(exc), code="host_identity_failed") from exc
+            context.stage("ssh_probe")
+            probed_state = probe_connection_state(connection)
+            context.apply_probe_state(probed_state)
         return probed_state
 
     def apply_probe_to_context(connection, probed_state) -> None:
@@ -322,12 +356,19 @@ def configure_operation(params: dict[str, object], context: AppOperationContext)
                     macos_local_network_privacy_signal="errno65_no_route_to_host",
                 )
             raise AppOperationError(
-                f"No AirPort ACP service responded at this address: {exc}",
+                f"No AirPort ACP service responded at this address: {exc} "
+                "No ACP password was sent and SSH was not enabled by this attempt. "
+                "Check the current IP in AirPort Utility; it may change when the network is disconnected. "
+                "Use the main LAN rather than a guest network, check macOS Local Network permission, "
+                "then correct the address or discover the device again and retry Save Device.",
                 code="remote_error",
             ) from exc
         raise AppOperationError(f"Failed to enable SSH via ACP: {exc}", code="remote_error") from exc
     except ACPError as exc:
         raise AppOperationError(f"Failed to enable SSH via ACP: {exc}", code="remote_error") from exc
+
+    finally:
+        setup_scope.close()
 
     context.connection = result.connection
     context.apply_probe_state(result.probe_state)

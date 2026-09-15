@@ -2191,7 +2191,7 @@ class AppApiTests(unittest.TestCase):
         self.assertFalse(config_path.exists())
         details = self.assert_confirmation(
             collector,
-            "configure.enable_ssh_reboot",
+            "ssh_setup.enable_legacy",
             {"device_name": "10.0.0.2", "requires_reboot": True},
         )
         self.assertEqual(details["context"]["host"], "root@10.0.0.2")
@@ -2213,7 +2213,7 @@ class AppApiTests(unittest.TestCase):
                     },
                     first_collector.sink,
                 )
-            confirmation_id = self.assert_confirmation(first_collector, "configure.enable_ssh_reboot")["confirmation_id"]
+            confirmation_id = self.assert_confirmation(first_collector, "ssh_setup.enable_legacy")["confirmation_id"]
 
             confirmed_collector = CollectingSink()
             with mock.patch(
@@ -2321,7 +2321,7 @@ class AppApiTests(unittest.TestCase):
         enable_ssh.assert_not_called()
         details = self.assert_confirmation(
             collector,
-            "ssh_access.enable_reboot",
+            "ssh_setup.enable_legacy",
             {
                 "host": "10.0.0.2",
                 "device_name": "10.0.0.2",
@@ -2362,7 +2362,7 @@ class AppApiTests(unittest.TestCase):
                     first_collector.sink,
                 )
                 self.assertEqual(rc, 1)
-            confirmation_id = self.assert_confirmation(first_collector, "ssh_access.enable_reboot")["confirmation_id"]
+            confirmation_id = self.assert_confirmation(first_collector, "ssh_setup.enable_legacy")["confirmation_id"]
 
             confirmed_collector = CollectingSink()
             result = SetSshResult(
@@ -2426,7 +2426,7 @@ class AppApiTests(unittest.TestCase):
                     first_collector.sink,
                 )
             self.assertEqual(rc, 1)
-            confirmation_id = self.assert_confirmation(first_collector, "ssh_access.enable_reboot")["confirmation_id"]
+            confirmation_id = self.assert_confirmation(first_collector, "ssh_setup.enable_legacy")["confirmation_id"]
 
             collector = CollectingSink()
             with mock.patch("timecapsulesmb.app.ops.set_ssh.probe_set_ssh_status", return_value=initial_status):
@@ -2476,7 +2476,7 @@ class AppApiTests(unittest.TestCase):
                     first_collector.sink,
                 )
             self.assertEqual(rc, 1)
-            confirmation_id = self.assert_confirmation(first_collector, "ssh_access.enable_reboot")["confirmation_id"]
+            confirmation_id = self.assert_confirmation(first_collector, "ssh_setup.enable_legacy")["confirmation_id"]
 
             collector = CollectingSink()
             with mock.patch("timecapsulesmb.app.ops.set_ssh.probe_set_ssh_status", return_value=initial_status):
@@ -2545,7 +2545,7 @@ class AppApiTests(unittest.TestCase):
         self.assertFalse(config_path.exists())
         error = self.assert_single_terminal_event(collector, "error")
         self.assertEqual(error["code"], "remote_error")
-        self.assertNotEqual(error.get("details", {}).get("presentation_id"), "configure.enable_ssh_reboot")
+        self.assertNotEqual(error.get("details", {}).get("presentation_id"), "ssh_setup.enable_legacy")
 
     def test_configure_reports_acp_auth_failure_without_writing_env(self) -> None:
         collector = CollectingSink()
@@ -2563,6 +2563,7 @@ class AppApiTests(unittest.TestCase):
                     "host": "root@10.0.0.2",
                     "device_name": "10.0.0.2",
                     "requires_reboot": True,
+                    "legacy_acp_ssh_setup": 1,
                 },
             )
             with mock.patch("timecapsulesmb.app.ops.configure.probe_connection_state", return_value=unreachable_probed_state()):
@@ -2681,6 +2682,7 @@ class AppApiTests(unittest.TestCase):
                     "host": "root@10.0.0.99",
                     "device_name": "10.0.0.99",
                     "requires_reboot": True,
+                    "legacy_acp_ssh_setup": 1,
                 },
             )
             with mock.patch("timecapsulesmb.app.ops.configure.probe_connection_state", return_value=unreachable_probed_state()):
@@ -2763,6 +2765,7 @@ class AppApiTests(unittest.TestCase):
                     "host": "root@10.0.0.99",
                     "device_name": "10.0.0.99",
                     "requires_reboot": True,
+                    "legacy_acp_ssh_setup": 1,
                 },
             )
             with mock.patch("timecapsulesmb.app.ops.configure.probe_connection_state", return_value=unreachable_probed_state()):
@@ -2828,6 +2831,7 @@ class AppApiTests(unittest.TestCase):
                     "host": "root@10.0.0.2",
                     "device_name": "10.0.0.2",
                     "requires_reboot": True,
+                    "legacy_acp_ssh_setup": 1,
                 },
             )
             with mock.patch("timecapsulesmb.app.ops.configure.probe_connection_state", return_value=unreachable_probed_state()):
@@ -2863,6 +2867,7 @@ class AppApiTests(unittest.TestCase):
                     "host": "root@10.0.0.2",
                     "device_name": "10.0.0.2",
                     "requires_reboot": True,
+                    "legacy_acp_ssh_setup": 1,
                 },
             )
             with mock.patch("timecapsulesmb.app.ops.configure.probe_connection_state", return_value=unreachable_probed_state()):
